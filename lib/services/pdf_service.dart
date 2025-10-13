@@ -1,32 +1,442 @@
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:the_book_tool/index.dart';
+import 'package:markdown/markdown.dart' as md;
 
 class PdfService {
-  Future<void> exportChaptersToPdf({
+  /// Convert markdown text to PDF widgets
+  List<pw.Widget> _markdownToPdfWidgets({
+    required String markdownText,
+    required pw.Font regularFont,
+    required pw.Font boldFont,
+    required pw.Font italicFont,
+    required pw.Font boldItalicFont,
+    required double fontSize,
+  }) {
+    // Parse markdown to AST
+    final document = md.Document(
+      encodeHtml: false,
+      extensionSet: md.ExtensionSet.gitHubFlavored,
+    );
+    final nodes = document.parseLines(markdownText.split('\n'));
+
+    final widgets = <pw.Widget>[];
+
+    for (final node in nodes) {
+      widgets.addAll(
+        _convertNodeToWidgets(
+          node,
+          regularFont: regularFont,
+          boldFont: boldFont,
+          italicFont: italicFont,
+          boldItalicFont: boldItalicFont,
+          fontSize: fontSize,
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  /// Convert a markdown node to PDF widgets
+  List<pw.Widget> _convertNodeToWidgets(
+    md.Node node, {
+    required pw.Font regularFont,
+    required pw.Font boldFont,
+    required pw.Font italicFont,
+    required pw.Font boldItalicFont,
+    required double fontSize,
+  }) {
+    final widgets = <pw.Widget>[];
+
+    if (node is md.Element) {
+      switch (node.tag) {
+        case 'h1':
+          widgets.add(pw.SizedBox(height: 12));
+          widgets.add(
+            pw.Text(
+              _extractText(node),
+              style: pw.TextStyle(
+                font: boldFont,
+                fontSize: fontSize * 2.0,
+              ),
+            ),
+          );
+          widgets.add(pw.SizedBox(height: 8));
+          break;
+
+        case 'h2':
+          widgets.add(pw.SizedBox(height: 10));
+          widgets.add(
+            pw.Text(
+              _extractText(node),
+              style: pw.TextStyle(
+                font: boldFont,
+                fontSize: fontSize * 1.75,
+              ),
+            ),
+          );
+          widgets.add(pw.SizedBox(height: 6));
+          break;
+
+        case 'h3':
+          widgets.add(pw.SizedBox(height: 8));
+          widgets.add(
+            pw.Text(
+              _extractText(node),
+              style: pw.TextStyle(
+                font: boldFont,
+                fontSize: fontSize * 1.5,
+              ),
+            ),
+          );
+          widgets.add(pw.SizedBox(height: 4));
+          break;
+
+        case 'p':
+          widgets.add(
+            pw.RichText(
+              text: _buildTextSpan(
+                node,
+                regularFont: regularFont,
+                boldFont: boldFont,
+                italicFont: italicFont,
+                boldItalicFont: boldItalicFont,
+                fontSize: fontSize,
+              ),
+            ),
+          );
+          widgets.add(pw.SizedBox(height: fontSize * 0.8));
+          break;
+
+        case 'ul':
+          for (final child in node.children ?? []) {
+            if (child is md.Element && child.tag == 'li') {
+              widgets.add(
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Container(
+                      width: 20,
+                      child: pw.Text(
+                        '•',
+                        style: pw.TextStyle(
+                          font: regularFont,
+                          fontSize: fontSize,
+                        ),
+                      ),
+                    ),
+                    pw.Expanded(
+                      child: pw.RichText(
+                        text: _buildTextSpan(
+                          child,
+                          regularFont: regularFont,
+                          boldFont: boldFont,
+                          italicFont: italicFont,
+                          boldItalicFont: boldItalicFont,
+                          fontSize: fontSize,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              widgets.add(pw.SizedBox(height: 4));
+            }
+          }
+          widgets.add(pw.SizedBox(height: 4));
+          break;
+
+        case 'ol':
+          int index = 1;
+          for (final child in node.children ?? []) {
+            if (child is md.Element && child.tag == 'li') {
+              widgets.add(
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Container(
+                      width: 20,
+                      child: pw.Text(
+                        '$index.',
+                        style: pw.TextStyle(
+                          font: regularFont,
+                          fontSize: fontSize,
+                        ),
+                      ),
+                    ),
+                    pw.Expanded(
+                      child: pw.RichText(
+                        text: _buildTextSpan(
+                          child,
+                          regularFont: regularFont,
+                          boldFont: boldFont,
+                          italicFont: italicFont,
+                          boldItalicFont: boldItalicFont,
+                          fontSize: fontSize,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              widgets.add(pw.SizedBox(height: 4));
+              index++;
+            }
+          }
+          widgets.add(pw.SizedBox(height: 4));
+          break;
+
+        case 'blockquote':
+          widgets.add(
+            pw.Container(
+              margin: const pw.EdgeInsets.symmetric(vertical: 8),
+              padding: const pw.EdgeInsets.only(left: 16, top: 8, bottom: 8),
+              decoration: pw.BoxDecoration(
+                border: pw.Border(
+                  left: pw.BorderSide(
+                    color: PdfColors.grey600,
+                    width: 3,
+                  ),
+                ),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children:
+                    node.children
+                        ?.expand(
+                          (child) => _convertNodeToWidgets(
+                            child,
+                            regularFont: regularFont,
+                            boldFont: boldFont,
+                            italicFont: italicFont,
+                            boldItalicFont: boldItalicFont,
+                            fontSize: fontSize,
+                          ),
+                        )
+                        .toList() ??
+                    [],
+              ),
+            ),
+          );
+          break;
+
+        case 'hr':
+          widgets.add(pw.SizedBox(height: 8));
+          widgets.add(pw.Divider(color: PdfColors.grey400));
+          widgets.add(pw.SizedBox(height: 8));
+          break;
+
+        case 'code':
+          // Inline code
+          widgets.add(
+            pw.Text(
+              _extractText(node),
+              style: pw.TextStyle(
+                font: regularFont,
+                fontSize: fontSize * 0.9,
+                color: PdfColors.grey800,
+              ),
+            ),
+          );
+          break;
+
+        case 'pre':
+          // Code block
+          widgets.add(
+            pw.Container(
+              margin: const pw.EdgeInsets.symmetric(vertical: 8),
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey200,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+              ),
+              child: pw.Text(
+                _extractText(node),
+                style: pw.TextStyle(
+                  font: regularFont,
+                  fontSize: fontSize * 0.9,
+                ),
+              ),
+            ),
+          );
+          break;
+
+        default:
+          // For other elements, recursively process children
+          for (final child in node.children ?? []) {
+            widgets.addAll(
+              _convertNodeToWidgets(
+                child,
+                regularFont: regularFont,
+                boldFont: boldFont,
+                italicFont: italicFont,
+                boldItalicFont: boldItalicFont,
+                fontSize: fontSize,
+              ),
+            );
+          }
+      }
+    } else if (node is md.Text) {
+      // Plain text node
+      widgets.add(
+        pw.Text(
+          node.text,
+          style: pw.TextStyle(font: regularFont, fontSize: fontSize),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  /// Build a text span with inline formatting (bold, italic, etc.)
+  pw.TextSpan _buildTextSpan(
+    md.Node node, {
+    required pw.Font regularFont,
+    required pw.Font boldFont,
+    required pw.Font italicFont,
+    required pw.Font boldItalicFont,
+    required double fontSize,
+    bool isBold = false,
+    bool isItalic = false,
+  }) {
+    if (node is md.Text) {
+      // Select the appropriate font based on bold/italic combination
+      pw.Font selectedFont;
+      if (isBold && isItalic) {
+        selectedFont = boldItalicFont;
+      } else if (isBold) {
+        selectedFont = boldFont;
+      } else if (isItalic) {
+        selectedFont = italicFont;
+      } else {
+        selectedFont = regularFont;
+      }
+
+      return pw.TextSpan(
+        text: node.text,
+        style: pw.TextStyle(
+          font: selectedFont,
+          fontSize: fontSize,
+        ),
+      );
+    } else if (node is md.Element) {
+      final children = <pw.TextSpan>[];
+
+      for (final child in node.children ?? []) {
+        final childBold = isBold || node.tag == 'strong' || node.tag == 'b';
+        final childItalic = isItalic || node.tag == 'em' || node.tag == 'i';
+        children.add(
+          _buildTextSpan(
+            child,
+            regularFont: regularFont,
+            boldFont: boldFont,
+            italicFont: italicFont,
+            boldItalicFont: boldItalicFont,
+            fontSize: fontSize,
+            isBold: childBold,
+            isItalic: childItalic,
+          ),
+        );
+      }
+
+      return pw.TextSpan(children: children);
+    }
+
+    return pw.TextSpan(text: '');
+  }
+
+  /// Extract plain text from a markdown node
+  String _extractText(md.Node node) {
+    if (node is md.Text) {
+      return node.text;
+    } else if (node is md.Element) {
+      return node.children?.map(_extractText).join('') ?? '';
+    }
+    return '';
+  }
+
+  /// Load a font with Unicode support from bundled assets
+  Future<pw.Font?> _loadUnicodeFont({
+    required ReadingFont readingFont,
+    bool bold = false,
+    bool italic = false,
+  }) async {
+    // Map ReadingFont enum to font file names
+    // Lora and Crimson Text fall back to similar fonts
+    String fontBaseName;
+    switch (readingFont) {
+      case ReadingFont.lora:
+        // Lora not available, use Source Serif 4 as fallback (similar serif)
+        fontBaseName = 'SourceSerif4';
+        break;
+      case ReadingFont.merriweather:
+        fontBaseName = 'Merriweather';
+        break;
+      case ReadingFont.openSans:
+        fontBaseName = 'OpenSans';
+        break;
+      case ReadingFont.crimsonText:
+        // Crimson Text not available, use Merriweather as fallback (similar serif)
+        fontBaseName = 'Merriweather';
+        break;
+      case ReadingFont.sourceSerif:
+        fontBaseName = 'SourceSerif4';
+        break;
+    }
+
+    // Determine font variant
+    String fontVariant;
+    if (bold && italic) {
+      fontVariant = 'BoldItalic';
+    } else if (bold) {
+      fontVariant = 'Bold';
+    } else if (italic) {
+      fontVariant = 'Italic';
+    } else {
+      fontVariant = 'Regular';
+    }
+
+    final fontName = '$fontBaseName-$fontVariant';
+    final fontPath = 'assets/fonts/$fontName.ttf';
+
+    try {
+      final fontData = await rootBundle.load(fontPath);
+      return pw.Font.ttf(fontData);
+    } catch (e) {
+      // Font loading failed, will use built-in fallback
+      return null;
+    }
+  }
+
+  /// Generate PDF bytes without showing save dialog
+  Future<Uint8List> generatePdfBytes({
     required List<Chapter> chapters,
     required String bookName,
     required String author,
     required ReadingFont font,
     required double fontSize,
+    required bool markdownEnabled,
   }) async {
-    // Load fonts with Unicode support (with timeout)
-    final regularFont = await _loadFont(font, false).timeout(
-      const Duration(seconds: 10),
-      onTimeout: () async {
-        // Fallback to simple font loading
-        return await _loadSimpleFont(false);
-      },
+    // Try to load fonts with Unicode support using the selected reading font
+    final regularFont = await _loadUnicodeFont(readingFont: font);
+    final boldFont = await _loadUnicodeFont(readingFont: font, bold: true);
+    final italicFont = await _loadUnicodeFont(readingFont: font, italic: true);
+    final boldItalicFont = await _loadUnicodeFont(
+      readingFont: font,
+      bold: true,
+      italic: true,
     );
-    final boldFont = await _loadFont(font, true).timeout(
-      const Duration(seconds: 10),
-      onTimeout: () async {
-        return await _loadSimpleFont(true);
-      },
-    );
+
+    // If loading failed, use built-in fonts and accept Unicode limitations
+    final pdfRegularFont = regularFont ?? pw.Font.times();
+    final pdfBoldFont = boldFont ?? pw.Font.timesBold();
+    final pdfItalicFont = italicFont ?? pw.Font.timesItalic();
+    final pdfBoldItalicFont = boldItalicFont ?? pw.Font.timesBoldItalic();
 
     // Create PDF document
     final pdf = pw.Document();
@@ -44,7 +454,7 @@ class PdfService {
                   bookName,
                   style: pw.TextStyle(
                     fontSize: 32,
-                    font: boldFont,
+                    font: pdfBoldFont,
                   ),
                 ),
                 pw.SizedBox(height: 20),
@@ -52,7 +462,7 @@ class PdfService {
                   'by $author',
                   style: pw.TextStyle(
                     fontSize: 18,
-                    font: regularFont,
+                    font: pdfRegularFont,
                   ),
                 ),
               ],
@@ -81,7 +491,7 @@ class PdfService {
                       'Chapter ${i + 1}',
                       style: pw.TextStyle(
                         fontSize: 12,
-                        font: regularFont,
+                        font: pdfRegularFont,
                         color: PdfColors.grey600,
                       ),
                     ),
@@ -90,21 +500,32 @@ class PdfService {
                       chapter.title,
                       style: pw.TextStyle(
                         fontSize: 24,
-                        font: boldFont,
+                        font: pdfBoldFont,
                       ),
                     ),
                     pw.SizedBox(height: 20),
                   ],
                 ),
               ),
-              pw.Paragraph(
-                text: chapter.content,
-                style: pw.TextStyle(
+              // Render chapter content with or without markdown formatting
+              if (markdownEnabled)
+                ...(_markdownToPdfWidgets(
+                  markdownText: chapter.content,
+                  regularFont: pdfRegularFont,
+                  boldFont: pdfBoldFont,
+                  italicFont: pdfItalicFont,
+                  boldItalicFont: pdfBoldItalicFont,
                   fontSize: fontSize,
-                  font: regularFont,
-                  lineSpacing: 1.5,
+                ))
+              else
+                pw.Paragraph(
+                  text: chapter.content,
+                  style: pw.TextStyle(
+                    fontSize: fontSize,
+                    font: pdfRegularFont,
+                    lineSpacing: 1.5,
+                  ),
                 ),
-              ),
             ];
           },
         ),
@@ -112,12 +533,18 @@ class PdfService {
     }
 
     // Generate PDF bytes
-    final pdfBytes = await pdf.save();
+    return await pdf.save();
+  }
 
-    // Get save location from user
-    final suggestedName = '${bookName.replaceAll(' ', '_')}.pdf';
+  /// Save PDF bytes to file (shows save dialog)
+  Future<void> savePdfToFile({
+    required Uint8List pdfBytes,
+    required String suggestedName,
+  }) async {
+    final fileName = '${suggestedName.replaceAll(' ', '_')}.pdf';
+
     final path = await getSaveLocation(
-      suggestedName: suggestedName,
+      suggestedName: fileName,
       acceptedTypeGroups: [
         const XTypeGroup(
           label: 'PDF',
@@ -130,112 +557,12 @@ class PdfService {
       // Save the PDF
       final file = XFile.fromData(
         pdfBytes,
-        name: suggestedName,
+        name: fileName,
         mimeType: 'application/pdf',
       );
       await file.saveTo(path.path);
     } else {
       throw Exception('PDF export was cancelled by user');
     }
-  }
-
-  Future<pw.Font> _loadFont(ReadingFont font, bool bold) async {
-    // Load Google Fonts with Unicode support for PDF
-    // Using Google Fonts API to download TTF files directly
-    final weight = bold ? '700' : '400';
-    String fontFamily;
-
-    switch (font) {
-      case ReadingFont.lora:
-        fontFamily = 'Lora';
-        break;
-      case ReadingFont.merriweather:
-        fontFamily = 'Merriweather';
-        break;
-      case ReadingFont.openSans:
-        fontFamily = 'Open+Sans';
-        break;
-      case ReadingFont.crimsonText:
-        fontFamily = 'Crimson+Text';
-        break;
-      case ReadingFont.sourceSerif:
-        fontFamily = 'Source+Serif+4';
-        break;
-    }
-
-    try {
-      // Download font from Google Fonts API
-      final url =
-          'https://fonts.googleapis.com/css2?family=$fontFamily:wght@$weight';
-      final cssResponse = await http.get(Uri.parse(url));
-
-      if (cssResponse.statusCode == 200) {
-        // Parse the CSS to get the actual TTF URL
-        final cssContent = cssResponse.body;
-        final urlMatch = RegExp(
-          r'url\((https://[^)]+\.ttf)\)',
-        ).firstMatch(cssContent);
-
-        if (urlMatch != null) {
-          final ttfUrl = urlMatch.group(1)!;
-          final fontResponse = await http.get(Uri.parse(ttfUrl));
-
-          if (fontResponse.statusCode == 200) {
-            return pw.Font.ttf(ByteData.view(fontResponse.bodyBytes.buffer));
-          }
-        }
-      }
-    } catch (e) {
-      // Fall through to fallback
-    }
-
-    // Fallback to Roboto if loading fails
-    try {
-      final url =
-          'https://fonts.googleapis.com/css2?family=Roboto:wght@$weight';
-      final cssResponse = await http.get(Uri.parse(url));
-
-      if (cssResponse.statusCode == 200) {
-        final cssContent = cssResponse.body;
-        final urlMatch = RegExp(
-          r'url\((https://[^)]+\.ttf)\)',
-        ).firstMatch(cssContent);
-
-        if (urlMatch != null) {
-          final ttfUrl = urlMatch.group(1)!;
-          final fontResponse = await http.get(Uri.parse(ttfUrl));
-
-          if (fontResponse.statusCode == 200) {
-            return pw.Font.ttf(ByteData.view(fontResponse.bodyBytes.buffer));
-          }
-        }
-      }
-    } catch (e) {
-      // Use PDF's built-in fallback
-    }
-
-    // Last resort: load a simple fallback
-    return await _loadSimpleFont(bold);
-  }
-
-  Future<pw.Font> _loadSimpleFont(bool bold) async {
-    // Use a hardcoded fallback - Roboto from a reliable CDN
-    try {
-      final url =
-          'https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-${bold ? 'Bold' : 'Regular'}.ttf';
-      final response = await http
-          .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        return pw.Font.ttf(ByteData.view(response.bodyBytes.buffer));
-      }
-    } catch (e) {
-      // Continue to final fallback
-    }
-
-    // Ultimate fallback - use a very simple embedded font
-    // This is Courier which has some Unicode support
-    return pw.Font.courier();
   }
 }

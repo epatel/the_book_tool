@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:the_book_tool/index.dart';
 
 class BookPage extends StatefulWidget {
@@ -130,54 +131,73 @@ class _BookPageState extends State<BookPage> {
       },
     );
 
+    // Generate PDF in background first
+    Uint8List? pdfBytes;
+    String? error;
+
     try {
       final pdfService = PdfService();
-      await pdfService
-          .exportChaptersToPdf(
-            chapters: provider.chapters,
-            bookName: _bookName.isEmpty ? 'My Book' : _bookName,
-            author: _author.isEmpty ? 'Unknown Author' : _author,
-            font: _readingFont,
-            fontSize: _fontSize,
-          )
-          .timeout(
-            const Duration(seconds: 60),
-            onTimeout: () {
-              throw Exception('PDF generation timed out after 60 seconds');
-            },
-          );
-
-      // Close loading dialog safely
-      if (mounted && isDialogShowing) {
-        Navigator.of(context, rootNavigator: true).pop();
-        isDialogShowing = false;
-      }
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF exported successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      pdfBytes = await pdfService.generatePdfBytes(
+        chapters: provider.chapters,
+        bookName: _bookName.isEmpty ? 'My Book' : _bookName,
+        author: _author.isEmpty ? 'Unknown Author' : _author,
+        font: _readingFont,
+        fontSize: _fontSize,
+        markdownEnabled: _markdownEnabled,
+      );
     } catch (e) {
-      // Close loading dialog safely
-      if (mounted && isDialogShowing) {
-        Navigator.of(context, rootNavigator: true).pop();
-        isDialogShowing = false;
-      }
+      error = e.toString();
+    }
 
-      // Show error message
+    // Close loading dialog now that generation is complete
+    if (mounted && isDialogShowing) {
+      Navigator.of(context, rootNavigator: true).pop();
+      isDialogShowing = false;
+    }
+
+    // If generation failed, show error
+    if (error != null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to export PDF: $e'),
+            content: Text('Failed to generate PDF: $error'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
         );
+      }
+      return;
+    }
+
+    // Now show save dialog (without loading spinner blocking it)
+    if (mounted && pdfBytes != null) {
+      try {
+        final pdfService = PdfService();
+        await pdfService.savePdfToFile(
+          pdfBytes: pdfBytes,
+          suggestedName: _bookName.isEmpty ? 'My_Book' : _bookName,
+        );
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PDF exported successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        // Show error message (user probably cancelled)
+        if (mounted && !e.toString().contains('cancelled')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save PDF: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
     }
   }

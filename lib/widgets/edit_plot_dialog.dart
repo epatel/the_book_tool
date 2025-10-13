@@ -1,4 +1,5 @@
 import 'package:the_book_tool/index.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class EditPlotDialog extends StatefulWidget {
   final Plot plot;
@@ -208,8 +209,15 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
           children: [
             DSButton.text(label: 'Delete', onPressed: _confirmDelete),
             IconButton(
-              icon: Icon(
-                _showAiPrompt ? Icons.smart_toy : Icons.smart_toy_outlined,
+              icon: Opacity(
+                opacity: _showAiPrompt ? 1.0 : 0.6,
+                child: SvgPicture.asset(
+                  Theme.of(context).brightness == Brightness.dark
+                      ? 'assets/images/OpenAI-white-monoblossom.svg'
+                      : 'assets/images/OpenAI-black-monoblossom.svg',
+                  width: 24,
+                  height: 24,
+                ),
               ),
               onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
               tooltip: widget.hasApiKey
