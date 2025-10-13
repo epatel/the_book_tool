@@ -18,7 +18,9 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.plot.title);
-    _descriptionController = TextEditingController(text: widget.plot.description);
+    _descriptionController = TextEditingController(
+      text: widget.plot.description,
+    );
   }
 
   @override

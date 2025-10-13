@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "mcp__dart__pub",
-      "mcp__dart__analyze_files"
+      "mcp__dart__analyze_files",
+      "Bash(flutter pub add:*)",
+      "mcp__dart__dart_format"
     ],
     "deny": [],
     "ask": []

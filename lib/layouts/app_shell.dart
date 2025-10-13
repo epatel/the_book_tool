@@ -26,7 +26,7 @@ class AppShell extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                   width: double.infinity,
                   child: const DSText.headlineSmall(
-                    'Book Writing',
+                    'Writing Tool',
                     style: TextStyle(color: AppTheme.onPrimaryColor),
                   ),
                 ),

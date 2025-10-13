@@ -14,7 +14,7 @@ void main() {
     await tester.pumpWidget(const App());
 
     // Verify that the navigation panel is displayed.
-    expect(find.text('Book Writing'), findsOneWidget);
+    expect(find.text('Writing Tool'), findsOneWidget);
     expect(find.text('Chapters'), findsOneWidget);
   });
 }

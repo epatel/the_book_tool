@@ -18,7 +18,9 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.character.name);
-    _descriptionController = TextEditingController(text: widget.character.description);
+    _descriptionController = TextEditingController(
+      text: widget.character.description,
+    );
   }
 
   @override

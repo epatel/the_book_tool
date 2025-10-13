@@ -46,15 +46,19 @@ class _MiscPageState extends State<MiscPage> {
 
     if (result != null && mounted) {
       if (result['delete'] == true) {
-        await Provider.of<MiscNoteProvider>(context, listen: false)
-            .deleteNote(note.id!);
+        await Provider.of<MiscNoteProvider>(
+          context,
+          listen: false,
+        ).deleteNote(note.id!);
       } else {
         final updatedNote = note.copyWith(
           title: result['title'] as String,
           content: result['content'] as String,
         );
-        await Provider.of<MiscNoteProvider>(context, listen: false)
-            .updateNote(updatedNote);
+        await Provider.of<MiscNoteProvider>(
+          context,
+          listen: false,
+        ).updateNote(updatedNote);
       }
     }
   }
@@ -69,7 +73,9 @@ class _MiscPageState extends State<MiscPage> {
               title: 'Misc',
               actions: [
                 IconButton(
-                  icon: Icon(_expandedAll ? Icons.unfold_less : Icons.unfold_more),
+                  icon: Icon(
+                    _expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                  ),
                   tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
                   onPressed: _toggleExpandAll,
                 ),
@@ -90,29 +96,26 @@ class _MiscPageState extends State<MiscPage> {
                           Icon(
                             Icons.note_outlined,
                             size: 64,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                           const DSSpacing.spacing16(),
                           DSText.bodyLarge(
                             'No notes yet',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           const DSSpacing.spacing8(),
                           DSText.bodySmall(
                             'Tap the + button to add your first note',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.4),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                           ),
                         ],
@@ -143,8 +146,10 @@ class _MiscPageState extends State<MiscPage> {
                       final notes = List<MiscNote>.from(provider.notes);
                       final note = notes.removeAt(oldIndex);
                       notes.insert(newIndex, note);
-                      Provider.of<MiscNoteProvider>(context, listen: false)
-                          .reorderNotes(notes);
+                      Provider.of<MiscNoteProvider>(
+                        context,
+                        listen: false,
+                      ).reorderNotes(notes);
                     },
                     itemBuilder: (context, index) {
                       final note = provider.notes[index];
@@ -164,11 +169,11 @@ class _MiscPageState extends State<MiscPage> {
                               DSText.bodyMedium(
                                 note.content,
                                 maxLines: _expandedAll ? null : 3,
-                                overflow: _expandedAll ? null : TextOverflow.ellipsis,
+                                overflow: _expandedAll
+                                    ? null
+                                    : TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                                  color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
                                 ),
                               ),

@@ -6,6 +6,16 @@ void main() async {
   // Initialize the database
   await DatabaseService.initialize();
 
+  // Initialize window manager
+  await windowManager.ensureInitialized();
+
+  // Restore window state
+  final windowPrefs = WindowPreferencesService();
+  await windowPrefs.restoreWindowState();
+
+  // Listen for window changes to save state
+  windowManager.addListener(_WindowStateListener(windowPrefs));
+
   runApp(
     MultiProvider(
       providers: [
@@ -17,4 +27,20 @@ void main() async {
       child: const App(),
     ),
   );
+}
+
+class _WindowStateListener extends WindowListener {
+  final WindowPreferencesService _windowPrefs;
+
+  _WindowStateListener(this._windowPrefs);
+
+  @override
+  void onWindowMoved() {
+    _windowPrefs.saveWindowState();
+  }
+
+  @override
+  void onWindowResized() {
+    _windowPrefs.saveWindowState();
+  }
 }

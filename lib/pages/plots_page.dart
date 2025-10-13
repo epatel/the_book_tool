@@ -46,15 +46,19 @@ class _PlotsPageState extends State<PlotsPage> {
 
     if (result != null && mounted) {
       if (result['delete'] == true) {
-        await Provider.of<PlotProvider>(context, listen: false)
-            .deletePlot(plot.id!);
+        await Provider.of<PlotProvider>(
+          context,
+          listen: false,
+        ).deletePlot(plot.id!);
       } else {
         final updatedPlot = plot.copyWith(
           title: result['title'] as String,
           description: result['description'] as String,
         );
-        await Provider.of<PlotProvider>(context, listen: false)
-            .updatePlot(updatedPlot);
+        await Provider.of<PlotProvider>(
+          context,
+          listen: false,
+        ).updatePlot(updatedPlot);
       }
     }
   }
@@ -69,7 +73,9 @@ class _PlotsPageState extends State<PlotsPage> {
               title: 'The Plots',
               actions: [
                 IconButton(
-                  icon: Icon(_expandedAll ? Icons.unfold_less : Icons.unfold_more),
+                  icon: Icon(
+                    _expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                  ),
                   tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
                   onPressed: _toggleExpandAll,
                 ),
@@ -90,29 +96,26 @@ class _PlotsPageState extends State<PlotsPage> {
                           Icon(
                             Icons.lightbulb_outlined,
                             size: 64,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                           const DSSpacing.spacing16(),
                           DSText.bodyLarge(
                             'No plot ideas yet',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           const DSSpacing.spacing8(),
                           DSText.bodySmall(
                             'Tap the + button to add your first plot idea',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.4),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                           ),
                         ],
@@ -143,8 +146,10 @@ class _PlotsPageState extends State<PlotsPage> {
                       final plots = List<Plot>.from(provider.plots);
                       final plot = plots.removeAt(oldIndex);
                       plots.insert(newIndex, plot);
-                      Provider.of<PlotProvider>(context, listen: false)
-                          .reorderPlots(plots);
+                      Provider.of<PlotProvider>(
+                        context,
+                        listen: false,
+                      ).reorderPlots(plots);
                     },
                     itemBuilder: (context, index) {
                       final plot = provider.plots[index];
@@ -164,11 +169,11 @@ class _PlotsPageState extends State<PlotsPage> {
                               DSText.bodyMedium(
                                 plot.description,
                                 maxLines: _expandedAll ? null : 3,
-                                overflow: _expandedAll ? null : TextOverflow.ellipsis,
+                                overflow: _expandedAll
+                                    ? null
+                                    : TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                                  color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
                                 ),
                               ),

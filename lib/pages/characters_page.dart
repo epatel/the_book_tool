@@ -46,15 +46,19 @@ class _CharactersPageState extends State<CharactersPage> {
 
     if (result != null && mounted) {
       if (result['delete'] == true) {
-        await Provider.of<CharacterProvider>(context, listen: false)
-            .deleteCharacter(character.id!);
+        await Provider.of<CharacterProvider>(
+          context,
+          listen: false,
+        ).deleteCharacter(character.id!);
       } else {
         final updatedCharacter = character.copyWith(
           name: result['name'] as String,
           description: result['description'] as String,
         );
-        await Provider.of<CharacterProvider>(context, listen: false)
-            .updateCharacter(updatedCharacter);
+        await Provider.of<CharacterProvider>(
+          context,
+          listen: false,
+        ).updateCharacter(updatedCharacter);
       }
     }
   }
@@ -69,7 +73,9 @@ class _CharactersPageState extends State<CharactersPage> {
               title: 'Characters',
               actions: [
                 IconButton(
-                  icon: Icon(_expandedAll ? Icons.unfold_less : Icons.unfold_more),
+                  icon: Icon(
+                    _expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                  ),
                   tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
                   onPressed: _toggleExpandAll,
                 ),
@@ -90,29 +96,26 @@ class _CharactersPageState extends State<CharactersPage> {
                           Icon(
                             Icons.people_outlined,
                             size: 64,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                           const DSSpacing.spacing16(),
                           DSText.bodyLarge(
                             'No characters yet',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           const DSSpacing.spacing8(),
                           DSText.bodySmall(
                             'Tap the + button to add your first character',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.4),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                           ),
                         ],
@@ -140,11 +143,15 @@ class _CharactersPageState extends State<CharactersPage> {
                       if (oldIndex < newIndex) {
                         newIndex -= 1;
                       }
-                      final characters = List<Character>.from(provider.characters);
+                      final characters = List<Character>.from(
+                        provider.characters,
+                      );
                       final character = characters.removeAt(oldIndex);
                       characters.insert(newIndex, character);
-                      Provider.of<CharacterProvider>(context, listen: false)
-                          .reorderCharacters(characters);
+                      Provider.of<CharacterProvider>(
+                        context,
+                        listen: false,
+                      ).reorderCharacters(characters);
                     },
                     itemBuilder: (context, index) {
                       final character = provider.characters[index];
@@ -164,11 +171,11 @@ class _CharactersPageState extends State<CharactersPage> {
                               DSText.bodyMedium(
                                 character.description,
                                 maxLines: _expandedAll ? null : 3,
-                                overflow: _expandedAll ? null : TextOverflow.ellipsis,
+                                overflow: _expandedAll
+                                    ? null
+                                    : TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                                  color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
                                 ),
                               ),

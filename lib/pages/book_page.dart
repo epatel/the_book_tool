@@ -220,18 +220,67 @@ class _BookPageState extends State<BookPage> {
                               DSText.titleMedium(chapter.title),
                               const DSSpacing.spacing8(),
                               if (_markdownEnabled)
-                                MarkdownBody(
-                                  data: chapter.content,
-                                  styleSheet: MarkdownStyleSheet(
-                                    p: TextStyle(
-                                      fontSize: 14,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                                )
+                                _expandedAll
+                                    ? MarkdownBody(
+                                        data: chapter.content,
+                                        styleSheet: MarkdownStyleSheet(
+                                          p: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                        ),
+                                      )
+                                    : SizedBox(
+                                        height: 60,
+                                        child: Stack(
+                                          children: [
+                                            SingleChildScrollView(
+                                              physics:
+                                                  const NeverScrollableScrollPhysics(),
+                                              child: MarkdownBody(
+                                                data: chapter.content,
+                                                styleSheet: MarkdownStyleSheet(
+                                                  p: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withValues(alpha: 0.7),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: 0,
+                                              left: 0,
+                                              right: 0,
+                                              height: 20,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Theme.of(context)
+                                                          .colorScheme
+                                                          .surface
+                                                          .withValues(
+                                                            alpha: 0.0,
+                                                          ),
+                                                      Theme.of(
+                                                        context,
+                                                      ).colorScheme.surface,
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
                               else
                                 DSText.bodyMedium(
                                   chapter.content,

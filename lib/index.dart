@@ -5,6 +5,8 @@ export 'package:provider/provider.dart';
 export 'package:sqflite_common_ffi/sqflite_ffi.dart';
 export 'package:path_provider/path_provider.dart';
 export 'package:flutter_markdown/flutter_markdown.dart';
+export 'package:shared_preferences/shared_preferences.dart';
+export 'package:window_manager/window_manager.dart';
 
 // Design System
 export 'design_system/theme.dart';
@@ -24,6 +26,7 @@ export 'models/misc_note.dart';
 
 // Services
 export 'services/database_service.dart';
+export 'services/window_preferences_service.dart';
 
 // Repositories
 export 'repositories/manifest_repository.dart';
