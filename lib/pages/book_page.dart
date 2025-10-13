@@ -9,10 +9,12 @@ class BookPage extends StatefulWidget {
 
 class _BookPageState extends State<BookPage> {
   final ManifestRepository _manifestRepository = ManifestRepository();
+  final AIService _aiService = AIService();
   bool _markdownEnabled = false;
   bool _expandedAll = false;
   String _bookName = '';
   String _author = '';
+  String _apiKey = '';
 
   @override
   void initState() {
@@ -25,11 +27,13 @@ class _BookPageState extends State<BookPage> {
 
   Future<void> _loadSettings() async {
     final manifest = await _manifestRepository.getAllAsMap();
+    final apiKey = await _aiService.getApiKey();
     if (mounted) {
       setState(() {
         _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
         _bookName = manifest['Name'] ?? '';
         _author = manifest['Author'] ?? '';
+        _apiKey = apiKey ?? '';
       });
     }
   }
@@ -41,6 +45,7 @@ class _BookPageState extends State<BookPage> {
         name: _bookName,
         author: _author,
         markdown: _markdownEnabled,
+        apiKey: _apiKey,
       ),
     );
 
@@ -50,6 +55,7 @@ class _BookPageState extends State<BookPage> {
         'Author': result['author'] as String,
         'Markdown': (result['markdown'] as bool).toString(),
       });
+      await _aiService.setApiKey(result['apiKey'] as String);
       await _loadSettings();
     }
   }

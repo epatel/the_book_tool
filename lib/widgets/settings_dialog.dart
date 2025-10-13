@@ -4,12 +4,14 @@ class SettingsDialog extends StatefulWidget {
   final String name;
   final String author;
   final bool markdown;
+  final String apiKey;
 
   const SettingsDialog({
     super.key,
     required this.name,
     required this.author,
     required this.markdown,
+    required this.apiKey,
   });
 
   @override
@@ -20,6 +22,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _authorController;
+  late final TextEditingController _apiKeyController;
   late bool _markdownEnabled;
 
   @override
@@ -27,6 +30,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.name);
     _authorController = TextEditingController(text: widget.author);
+    _apiKeyController = TextEditingController(text: widget.apiKey);
     _markdownEnabled = widget.markdown;
   }
 
@@ -34,6 +38,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   void dispose() {
     _nameController.dispose();
     _authorController.dispose();
+    _apiKeyController.dispose();
     super.dispose();
   }
 
@@ -62,6 +67,16 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   labelText: 'Author',
                   border: OutlineInputBorder(),
                 ),
+              ),
+              const DSSpacing.spacing16(),
+              TextFormField(
+                controller: _apiKeyController,
+                decoration: const InputDecoration(
+                  labelText: 'OpenAI API Key',
+                  border: OutlineInputBorder(),
+                  hintText: 'sk-...',
+                ),
+                obscureText: true,
               ),
               const DSSpacing.spacing16(),
               Row(
@@ -95,6 +110,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 'name': _nameController.text,
                 'author': _authorController.text,
                 'markdown': _markdownEnabled,
+                'apiKey': _apiKeyController.text,
               });
             }
           },

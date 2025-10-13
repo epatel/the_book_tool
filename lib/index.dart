@@ -7,6 +7,7 @@ export 'package:path_provider/path_provider.dart';
 export 'package:flutter_markdown/flutter_markdown.dart';
 export 'package:shared_preferences/shared_preferences.dart';
 export 'package:window_manager/window_manager.dart';
+export 'package:openai_dart/openai_dart.dart' hide Image, Batch;
 
 // Design System
 export 'design_system/theme.dart';
@@ -27,6 +28,8 @@ export 'models/misc_note.dart';
 // Services
 export 'services/database_service.dart';
 export 'services/window_preferences_service.dart';
+export 'services/book_data_service.dart';
+export 'services/ai_service.dart';
 
 // Repositories
 export 'repositories/manifest_repository.dart';
