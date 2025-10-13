@@ -8,11 +8,19 @@ class CharactersPage extends StatefulWidget {
 }
 
 class _CharactersPageState extends State<CharactersPage> {
+  bool _expandedAll = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CharacterProvider>(context, listen: false).loadCharacters();
+    });
+  }
+
+  void _toggleExpandAll() {
+    setState(() {
+      _expandedAll = !_expandedAll;
     });
   }
 
@@ -57,7 +65,16 @@ class _CharactersPageState extends State<CharactersPage> {
       children: [
         Column(
           children: [
-            const DSAppBar(title: 'Characters'),
+            DSAppBar(
+              title: 'Characters',
+              actions: [
+                IconButton(
+                  icon: Icon(_expandedAll ? Icons.unfold_less : Icons.unfold_more),
+                  tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: _toggleExpandAll,
+                ),
+              ],
+            ),
             Expanded(
               child: Consumer<CharacterProvider>(
                 builder: (context, provider, child) {
@@ -146,8 +163,8 @@ class _CharactersPageState extends State<CharactersPage> {
                               const DSSpacing.spacing8(),
                               DSText.bodyMedium(
                                 character.description,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: _expandedAll ? null : 3,
+                                overflow: _expandedAll ? null : TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme

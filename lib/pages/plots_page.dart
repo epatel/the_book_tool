@@ -8,11 +8,19 @@ class PlotsPage extends StatefulWidget {
 }
 
 class _PlotsPageState extends State<PlotsPage> {
+  bool _expandedAll = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PlotProvider>(context, listen: false).loadPlots();
+    });
+  }
+
+  void _toggleExpandAll() {
+    setState(() {
+      _expandedAll = !_expandedAll;
     });
   }
 
@@ -57,7 +65,16 @@ class _PlotsPageState extends State<PlotsPage> {
       children: [
         Column(
           children: [
-            const DSAppBar(title: 'The Plots'),
+            DSAppBar(
+              title: 'The Plots',
+              actions: [
+                IconButton(
+                  icon: Icon(_expandedAll ? Icons.unfold_less : Icons.unfold_more),
+                  tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: _toggleExpandAll,
+                ),
+              ],
+            ),
             Expanded(
               child: Consumer<PlotProvider>(
                 builder: (context, provider, child) {
@@ -146,8 +163,8 @@ class _PlotsPageState extends State<PlotsPage> {
                               const DSSpacing.spacing8(),
                               DSText.bodyMedium(
                                 plot.description,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: _expandedAll ? null : 3,
+                                overflow: _expandedAll ? null : TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme

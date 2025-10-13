@@ -45,9 +45,12 @@ class DatabaseService {
     ''');
 
     // Insert default values
-    await db.insert('manifest', {'key': 'Name', 'value': ''});
+    await db.insert('manifest', {'key': 'Name', 'value': 'The Book'});
     await db.insert('manifest', {'key': 'Author', 'value': ''});
-    await db.insert('manifest', {'key': 'Version', 'value': version.toString()});
+    await db.insert('manifest', {
+      'key': 'Version',
+      'value': version.toString(),
+    });
     await db.insert('manifest', {'key': 'Markdown', 'value': 'false'});
 
     // Create chapters table

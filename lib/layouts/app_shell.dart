@@ -36,7 +36,7 @@ class AppShell extends StatelessWidget {
                     children: [
                       _NavItem(
                         icon: Icons.book,
-                        title: 'The Book',
+                        title: 'Chapters',
                         path: '/book',
                         currentPath: currentPath,
                       ),

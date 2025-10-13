@@ -8,11 +8,19 @@ class MiscPage extends StatefulWidget {
 }
 
 class _MiscPageState extends State<MiscPage> {
+  bool _expandedAll = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MiscNoteProvider>(context, listen: false).loadNotes();
+    });
+  }
+
+  void _toggleExpandAll() {
+    setState(() {
+      _expandedAll = !_expandedAll;
     });
   }
 
@@ -57,7 +65,16 @@ class _MiscPageState extends State<MiscPage> {
       children: [
         Column(
           children: [
-            const DSAppBar(title: 'Misc'),
+            DSAppBar(
+              title: 'Misc',
+              actions: [
+                IconButton(
+                  icon: Icon(_expandedAll ? Icons.unfold_less : Icons.unfold_more),
+                  tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: _toggleExpandAll,
+                ),
+              ],
+            ),
             Expanded(
               child: Consumer<MiscNoteProvider>(
                 builder: (context, provider, child) {
@@ -146,8 +163,8 @@ class _MiscPageState extends State<MiscPage> {
                               const DSSpacing.spacing8(),
                               DSText.bodyMedium(
                                 note.content,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: _expandedAll ? null : 3,
+                                overflow: _expandedAll ? null : TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme

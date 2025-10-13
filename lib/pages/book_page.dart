@@ -10,23 +10,54 @@ class BookPage extends StatefulWidget {
 class _BookPageState extends State<BookPage> {
   final ManifestRepository _manifestRepository = ManifestRepository();
   bool _markdownEnabled = false;
+  bool _expandedAll = false;
+  String _bookName = '';
+  String _author = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ChapterProvider>(context, listen: false).loadChapters();
-      _loadMarkdownSetting();
+      _loadSettings();
     });
   }
 
-  Future<void> _loadMarkdownSetting() async {
-    final enabled = await _manifestRepository.getBool('Markdown');
+  Future<void> _loadSettings() async {
+    final manifest = await _manifestRepository.getAllAsMap();
     if (mounted) {
       setState(() {
-        _markdownEnabled = enabled;
+        _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
+        _bookName = manifest['Name'] ?? '';
+        _author = manifest['Author'] ?? '';
       });
     }
+  }
+
+  Future<void> _showSettingsDialog() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => SettingsDialog(
+        name: _bookName,
+        author: _author,
+        markdown: _markdownEnabled,
+      ),
+    );
+
+    if (result != null && mounted) {
+      await _manifestRepository.setMultiple({
+        'Name': result['name'] as String,
+        'Author': result['author'] as String,
+        'Markdown': (result['markdown'] as bool).toString(),
+      });
+      await _loadSettings();
+    }
+  }
+
+  void _toggleExpandAll() {
+    setState(() {
+      _expandedAll = !_expandedAll;
+    });
   }
 
   Future<void> _showAddChapterDialog() async {
@@ -74,7 +105,23 @@ class _BookPageState extends State<BookPage> {
       children: [
         Column(
           children: [
-            const DSAppBar(title: 'The Book'),
+            DSAppBar(
+              title: _bookName,
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    _expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                  ),
+                  tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: _toggleExpandAll,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  tooltip: 'Settings',
+                  onPressed: _showSettingsDialog,
+                ),
+              ],
+            ),
             Expanded(
               child: Consumer<ChapterProvider>(
                 builder: (context, provider, child) {
@@ -178,7 +225,9 @@ class _BookPageState extends State<BookPage> {
                                   styleSheet: MarkdownStyleSheet(
                                     p: TextStyle(
                                       fontSize: 14,
-                                      color: Theme.of(context).colorScheme.onSurface
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
                                           .withValues(alpha: 0.7),
                                     ),
                                   ),
@@ -186,10 +235,14 @@ class _BookPageState extends State<BookPage> {
                               else
                                 DSText.bodyMedium(
                                   chapter.content,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: _expandedAll ? null : 3,
+                                  overflow: _expandedAll
+                                      ? null
+                                      : TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
                                         .withValues(alpha: 0.7),
                                   ),
                                 ),

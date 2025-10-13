@@ -47,6 +47,7 @@ export 'widgets/edit_chapter_dialog.dart';
 export 'widgets/edit_character_dialog.dart';
 export 'widgets/edit_plot_dialog.dart';
 export 'widgets/edit_misc_note_dialog.dart';
+export 'widgets/settings_dialog.dart';
 
 // Local files
 export 'app.dart';

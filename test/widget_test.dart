@@ -15,6 +15,6 @@ void main() {
 
     // Verify that the navigation panel is displayed.
     expect(find.text('Book Writing'), findsOneWidget);
-    expect(find.text('The Book'), findsOneWidget);
+    expect(find.text('Chapters'), findsOneWidget);
   });
 }
