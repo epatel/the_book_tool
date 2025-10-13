@@ -476,6 +476,13 @@ class PdfService {
     for (int i = 0; i < chapters.length; i++) {
       final chapter = chapters[i];
 
+      // Check if first chapter is "Prologue" to adjust numbering
+      final bool isPrologue = i == 0 &&
+          chapter.title.toLowerCase().trim() == 'prologue';
+      final int chapterNumber = isPrologue ? 0 :
+          (chapters.isNotEmpty &&
+           chapters[0].title.toLowerCase().trim() == 'prologue' ? i : i + 1);
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
@@ -487,14 +494,15 @@ class PdfService {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      'Chapter ${i + 1}',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        font: pdfRegularFont,
-                        color: PdfColors.grey600,
+                    if (chapterNumber > 0)
+                      pw.Text(
+                        'Chapter $chapterNumber',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          font: pdfRegularFont,
+                          color: PdfColors.grey600,
+                        ),
                       ),
-                    ),
                     pw.SizedBox(height: 8),
                     pw.Text(
                       chapter.title,

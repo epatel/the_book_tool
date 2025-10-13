@@ -230,6 +230,24 @@ class _BookPageState extends State<BookPage> {
     }
   }
 
+  String _getChapterLabel(List<Chapter> chapters, int index) {
+    // Check if first chapter is "Prologue"
+    final bool isPrologue = index == 0 &&
+        chapters[index].title.toLowerCase().trim() == 'prologue';
+
+    if (isPrologue) {
+      return ''; // No label for prologue
+    }
+
+    // If first chapter is prologue, adjust numbering for subsequent chapters
+    final int chapterNumber = chapters.isNotEmpty &&
+        chapters[0].title.toLowerCase().trim() == 'prologue'
+        ? index
+        : index + 1;
+
+    return 'Chapter $chapterNumber';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -306,6 +324,10 @@ class _BookPageState extends State<BookPage> {
                       itemCount: provider.chapters.length,
                       itemBuilder: (context, index) {
                         final chapter = provider.chapters[index];
+                        final chapterLabel = _getChapterLabel(
+                          provider.chapters,
+                          index,
+                        );
                         return Container(
                           key: ValueKey(chapter.id),
                           padding: const EdgeInsets.only(
@@ -316,19 +338,21 @@ class _BookPageState extends State<BookPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    DSText.bodySmall(
-                                      'Chapter ${index + 1}',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
+                                if (chapterLabel.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      DSText.bodySmall(
+                                        chapterLabel,
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const DSSpacing.spacing8(),
+                                    ],
+                                  ),
+                                if (chapterLabel.isNotEmpty)
+                                  const DSSpacing.spacing8(),
                                 DSText.titleMedium(chapter.title),
                                 const DSSpacing.spacing8(),
                                 if (_markdownEnabled)
@@ -393,6 +417,10 @@ class _BookPageState extends State<BookPage> {
                     },
                     itemBuilder: (context, index) {
                       final chapter = provider.chapters[index];
+                      final chapterLabel = _getChapterLabel(
+                        provider.chapters,
+                        index,
+                      );
                       return Container(
                         key: ValueKey(chapter.id),
                         padding: const EdgeInsets.only(
@@ -403,19 +431,21 @@ class _BookPageState extends State<BookPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  DSText.bodySmall(
-                                    'Chapter ${index + 1}',
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
+                              if (chapterLabel.isNotEmpty)
+                                Row(
+                                  children: [
+                                    DSText.bodySmall(
+                                      chapterLabel,
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const DSSpacing.spacing8(),
+                                  ],
+                                ),
+                              if (chapterLabel.isNotEmpty)
+                                const DSSpacing.spacing8(),
                               DSText.titleMedium(chapter.title),
                               const DSSpacing.spacing8(),
                               if (_markdownEnabled)

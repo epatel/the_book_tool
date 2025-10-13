@@ -61,14 +61,15 @@ $currentText
 
       final response = await client.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: const ChatCompletionModel.modelId('gpt-4o'),
+          model: const ChatCompletionModel.modelId('gpt-4.1'),
           messages: [
             ChatCompletionMessage.system(content: systemMessage),
             ChatCompletionMessage.user(
               content: ChatCompletionUserMessageContent.string(prompt),
             ),
           ],
-          temperature: 0.7,
+          // GPT-5 optimized parameters for creative writing
+          maxCompletionTokens: 4096, // Allow longer creative responses
         ),
       );
 
