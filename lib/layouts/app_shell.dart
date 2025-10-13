@@ -1,14 +1,32 @@
 import 'package:the_book_tool/index.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   final Widget child;
   final String currentPath;
 
-  const AppShell({
-    super.key,
-    required this.child,
-    required this.currentPath,
-  });
+  const AppShell({super.key, required this.child, required this.currentPath});
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  Future<void> _showDatabaseDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => const DatabaseSelectionDialog(),
+    );
+
+    if (result == true && mounted) {
+      // Database was switched, reload all data from all providers
+      await Future.wait([
+        Provider.of<ChapterProvider>(context, listen: false).loadChapters(),
+        Provider.of<CharacterProvider>(context, listen: false).loadCharacters(),
+        Provider.of<PlotProvider>(context, listen: false).loadPlots(),
+        Provider.of<MiscNoteProvider>(context, listen: false).loadNotes(),
+      ]);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,17 +35,37 @@ class AppShell extends StatelessWidget {
         children: [
           // Stationary navigation panel
           Container(
-            width: 250,
+            width: AppTheme.sidebarWidth,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Column(
               children: [
                 Container(
                   padding: const EdgeInsets.all(AppTheme.spacing20),
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   width: double.infinity,
-                  child: const DSText.headlineSmall(
-                    'Writing Tool',
-                    style: TextStyle(color: AppTheme.onPrimaryColor),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DSText.headlineSmall(
+                          'Writing Tool',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.storage,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                        ),
+                        tooltip: 'Database',
+                        onPressed: _showDatabaseDialog,
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -38,25 +76,25 @@ class AppShell extends StatelessWidget {
                         icon: Icons.book,
                         title: 'Chapters',
                         path: '/book',
-                        currentPath: currentPath,
+                        currentPath: widget.currentPath,
                       ),
                       _NavItem(
                         icon: Icons.people,
                         title: 'Characters',
                         path: '/characters',
-                        currentPath: currentPath,
+                        currentPath: widget.currentPath,
                       ),
                       _NavItem(
                         icon: Icons.lightbulb,
                         title: 'The Plots',
                         path: '/plots',
-                        currentPath: currentPath,
+                        currentPath: widget.currentPath,
                       ),
                       _NavItem(
                         icon: Icons.note,
                         title: 'Misc',
                         path: '/misc',
-                        currentPath: currentPath,
+                        currentPath: widget.currentPath,
                       ),
                     ],
                   ),
@@ -68,7 +106,7 @@ class AppShell extends StatelessWidget {
           Expanded(
             child: Container(
               color: Theme.of(context).colorScheme.surface,
-              child: child,
+              child: widget.child,
             ),
           ),
         ],

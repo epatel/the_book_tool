@@ -17,9 +17,6 @@ class DSSpacing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-    );
+    return SizedBox(width: size, height: size);
   }
 }

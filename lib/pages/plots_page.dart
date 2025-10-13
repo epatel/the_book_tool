@@ -8,14 +8,26 @@ class PlotsPage extends StatefulWidget {
 }
 
 class _PlotsPageState extends State<PlotsPage> {
+  final AIService _aiService = AIService();
   bool _expandedAll = false;
+  String _apiKey = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PlotProvider>(context, listen: false).loadPlots();
+      _loadApiKey();
     });
+  }
+
+  Future<void> _loadApiKey() async {
+    final apiKey = await _aiService.getApiKey();
+    if (mounted) {
+      setState(() {
+        _apiKey = apiKey ?? '';
+      });
+    }
   }
 
   void _toggleExpandAll() {
@@ -31,17 +43,20 @@ class _PlotsPageState extends State<PlotsPage> {
     );
 
     if (result != null && mounted) {
-      await Provider.of<PlotProvider>(context, listen: false).addPlot(
-        result['title']!,
-        result['description']!,
-      );
+      await Provider.of<PlotProvider>(
+        context,
+        listen: false,
+      ).addPlot(result['title']!, result['description']!);
     }
   }
 
   Future<void> _showEditPlotDialog(Plot plot) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => EditPlotDialog(plot: plot),
+      builder: (dialogContext) => EditPlotDialog(
+        plot: plot,
+        hasApiKey: _apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {
@@ -123,6 +138,42 @@ class _PlotsPageState extends State<PlotsPage> {
                     );
                   }
 
+                  if (_expandedAll) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(AppTheme.spacing16),
+                      itemCount: provider.plots.length,
+                      itemBuilder: (context, index) {
+                        final plot = provider.plots[index];
+                        return Container(
+                          key: ValueKey(plot.id),
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(
+                            bottom: AppTheme.spacing12,
+                          ),
+                          child: DSCard(
+                            onTap: () => _showEditPlotDialog(plot),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                DSText.titleMedium(plot.title),
+                                const DSSpacing.spacing8(),
+                                DSText.bodyMedium(
+                                  plot.description,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+
                   return ReorderableListView.builder(
                     padding: const EdgeInsets.all(AppTheme.spacing16),
                     itemCount: provider.plots.length,
@@ -168,10 +219,8 @@ class _PlotsPageState extends State<PlotsPage> {
                               const DSSpacing.spacing8(),
                               DSText.bodyMedium(
                                 plot.description,
-                                maxLines: _expandedAll ? null : 3,
-                                overflow: _expandedAll
-                                    ? null
-                                    : TextOverflow.ellipsis,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),

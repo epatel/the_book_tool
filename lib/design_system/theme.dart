@@ -1,7 +1,7 @@
 import 'package:the_book_tool/index.dart';
 
 class AppTheme {
-  // Colors
+  // Light Theme Colors
   static const primaryColor = Color(0xFF6750A4);
   static const secondaryColor = Color(0xFF625B71);
   static const backgroundColor = Color(0xFFFFFBFE);
@@ -12,6 +12,18 @@ class AppTheme {
   static const onBackgroundColor = Color(0xFF1C1B1F);
   static const onSurfaceColor = Color(0xFF1C1B1F);
   static const errorColor = Color(0xFFB3261E);
+
+  // Dark Theme Colors
+  static const primaryColorDark = Color(0xFFD0BCFF);
+  static const secondaryColorDark = Color(0xFFCCC2DC);
+  static const backgroundColorDark = Color(0xFF1C1B1F);
+  static const surfaceColorDark = Color(0xFF1C1B1F);
+  static const surfaceVariantColorDark = Color(0xFF49454F);
+  static const onPrimaryColorDark = Color(0xFF381E72);
+  static const onSecondaryColorDark = Color(0xFF332D41);
+  static const onBackgroundColorDark = Color(0xFFE6E1E5);
+  static const onSurfaceColorDark = Color(0xFFE6E1E5);
+  static const errorColorDark = Color(0xFFF2B8B5);
 
   // Typography
   static const displayLarge = TextStyle(
@@ -122,6 +134,37 @@ class AppTheme {
   static const elevation4 = 8.0;
   static const elevation5 = 12.0;
 
+  // Layout Widths
+  static const sidebarWidth = 250.0;
+  static const dialogWidth = 500.0;
+  static const dialogWidthSmall = 400.0;
+
+  // Icon Sizes
+  static const iconSizeSmall = 18.0;
+  static const iconSizeMedium = 24.0;
+  static const iconSizeLarge = 64.0;
+
+  // Component Heights
+  static const collapsedContentHeight = 60.0;
+  static const gradientOverlayHeight = 20.0;
+
+  // Text MaxLines
+  static const maxLinesPreview = 3;
+  static const maxLinesContentField = 5;
+  static const maxLinesAiPrompt = 2;
+
+  // Stroke Widths
+  static const strokeWidthThin = 2.0;
+  static const strokeWidthNormal = 4.0;
+
+  // Opacity Values
+  static const opacityDisabled = 0.3;
+  static const opacitySubtle = 0.4;
+  static const opacityMedium = 0.6;
+  static const opacityHigh = 0.7;
+  static const opacityFull = 1.0;
+  static const opacityTransparent = 0.0;
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -137,10 +180,49 @@ class AppTheme {
         surfaceContainerHighest: surfaceVariantColor,
       ),
       scaffoldBackgroundColor: backgroundColor,
-      appBarTheme: const AppBarTheme(
-        elevation: 0,
-        centerTitle: false,
+      appBarTheme: const AppBarTheme(elevation: 0, centerTitle: false),
+      cardTheme: CardThemeData(
+        elevation: elevation1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMedium),
+        ),
       ),
+      textTheme: const TextTheme(
+        displayLarge: displayLarge,
+        displayMedium: displayMedium,
+        displaySmall: displaySmall,
+        headlineLarge: headlineLarge,
+        headlineMedium: headlineMedium,
+        headlineSmall: headlineSmall,
+        titleLarge: titleLarge,
+        titleMedium: titleMedium,
+        titleSmall: titleSmall,
+        bodyLarge: bodyLarge,
+        bodyMedium: bodyMedium,
+        bodySmall: bodySmall,
+        labelLarge: labelLarge,
+        labelMedium: labelMedium,
+        labelSmall: labelSmall,
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.dark(
+        primary: primaryColorDark,
+        secondary: secondaryColorDark,
+        surface: surfaceColorDark,
+        error: errorColorDark,
+        onPrimary: onPrimaryColorDark,
+        onSecondary: onSecondaryColorDark,
+        onSurface: onSurfaceColorDark,
+        onError: onPrimaryColorDark,
+        surfaceContainerHighest: surfaceVariantColorDark,
+      ),
+      scaffoldBackgroundColor: backgroundColorDark,
+      appBarTheme: const AppBarTheme(elevation: 0, centerTitle: false),
       cardTheme: CardThemeData(
         elevation: elevation1,
         shape: RoundedRectangleBorder(

@@ -1,9 +1,7 @@
 import 'package:the_book_tool/index.dart';
-import 'package:path/path.dart' as path;
 
 class DatabaseService {
   static Database? _database;
-  static const String _databaseName = 'book_tool.db';
   static const int _databaseVersion = 1;
 
   static Future<Database> get database async {
@@ -21,9 +19,9 @@ class DatabaseService {
   }
 
   static Future<Database> _initDatabase() async {
-    // Get the Documents directory for macOS
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbPath = path.join(documentsDirectory.path, _databaseName);
+    // Get the current database path from DatabaseManager
+    final databaseManager = DatabaseManager();
+    final dbPath = await databaseManager.getCurrentDatabasePath();
 
     return await databaseFactory.openDatabase(
       dbPath,

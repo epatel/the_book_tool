@@ -8,15 +8,21 @@ export 'package:flutter_markdown/flutter_markdown.dart';
 export 'package:shared_preferences/shared_preferences.dart';
 export 'package:window_manager/window_manager.dart';
 export 'package:openai_dart/openai_dart.dart' hide Image, Batch;
+export 'package:google_fonts/google_fonts.dart';
 
 // Design System
 export 'design_system/theme.dart';
+export 'design_system/reading_fonts.dart';
 export 'design_system/widgets/ds_app_bar.dart';
 export 'design_system/widgets/ds_button.dart';
 export 'design_system/widgets/ds_card.dart';
+export 'design_system/widgets/ds_dialog.dart';
+export 'design_system/widgets/ds_empty_state.dart';
 export 'design_system/widgets/ds_list_tile.dart';
+export 'design_system/widgets/ds_loading.dart';
 export 'design_system/widgets/ds_spacing.dart';
 export 'design_system/widgets/ds_text.dart';
+export 'design_system/widgets/ds_text_field.dart';
 
 // Models
 export 'models/manifest_entry.dart';
@@ -27,9 +33,11 @@ export 'models/misc_note.dart';
 
 // Services
 export 'services/database_service.dart';
+export 'services/database_manager.dart';
 export 'services/window_preferences_service.dart';
 export 'services/book_data_service.dart';
 export 'services/ai_service.dart';
+export 'services/pdf_service.dart';
 
 // Repositories
 export 'repositories/manifest_repository.dart';
@@ -39,6 +47,7 @@ export 'repositories/plot_repository.dart';
 export 'repositories/misc_note_repository.dart';
 
 // Providers
+export 'providers/theme_provider.dart';
 export 'providers/chapter_provider.dart';
 export 'providers/character_provider.dart';
 export 'providers/plot_provider.dart';
@@ -54,6 +63,7 @@ export 'widgets/edit_character_dialog.dart';
 export 'widgets/edit_plot_dialog.dart';
 export 'widgets/edit_misc_note_dialog.dart';
 export 'widgets/settings_dialog.dart';
+export 'widgets/database_selection_dialog.dart';
 
 // Local files
 export 'app.dart';

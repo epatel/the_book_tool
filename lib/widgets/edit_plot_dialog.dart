@@ -2,8 +2,13 @@ import 'package:the_book_tool/index.dart';
 
 class EditPlotDialog extends StatefulWidget {
   final Plot plot;
+  final bool hasApiKey;
 
-  const EditPlotDialog({super.key, required this.plot});
+  const EditPlotDialog({
+    super.key,
+    required this.plot,
+    this.hasApiKey = false,
+  });
 
   @override
   State<EditPlotDialog> createState() => _EditPlotDialogState();
@@ -201,16 +206,15 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
       actions: [
         Row(
           children: [
-            DSButton.text(
-              label: 'Delete',
-              onPressed: _confirmDelete,
-            ),
+            DSButton.text(label: 'Delete', onPressed: _confirmDelete),
             IconButton(
               icon: Icon(
                 _showAiPrompt ? Icons.smart_toy : Icons.smart_toy_outlined,
               ),
-              onPressed: _toggleAiPrompt,
-              tooltip: 'AI Assistant',
+              onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+              tooltip: widget.hasApiKey
+                  ? 'AI Assistant'
+                  : 'AI Assistant (API key required)',
             ),
             const Spacer(),
             DSButton.text(

@@ -2,8 +2,13 @@ import 'package:the_book_tool/index.dart';
 
 class EditChapterDialog extends StatefulWidget {
   final Chapter chapter;
+  final bool hasApiKey;
 
-  const EditChapterDialog({super.key, required this.chapter});
+  const EditChapterDialog({
+    super.key,
+    required this.chapter,
+    this.hasApiKey = false,
+  });
 
   @override
   State<EditChapterDialog> createState() => _EditChapterDialogState();
@@ -199,16 +204,15 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
       actions: [
         Row(
           children: [
-            DSButton.text(
-              label: 'Delete',
-              onPressed: _confirmDelete,
-            ),
+            DSButton.text(label: 'Delete', onPressed: _confirmDelete),
             IconButton(
               icon: Icon(
                 _showAiPrompt ? Icons.smart_toy : Icons.smart_toy_outlined,
               ),
-              onPressed: _toggleAiPrompt,
-              tooltip: 'AI Assistant',
+              onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+              tooltip: widget.hasApiKey
+                  ? 'AI Assistant'
+                  : 'AI Assistant (API key required)',
             ),
             const Spacer(),
             DSButton.text(

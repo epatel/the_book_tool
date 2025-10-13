@@ -8,14 +8,26 @@ class CharactersPage extends StatefulWidget {
 }
 
 class _CharactersPageState extends State<CharactersPage> {
+  final AIService _aiService = AIService();
   bool _expandedAll = false;
+  String _apiKey = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CharacterProvider>(context, listen: false).loadCharacters();
+      _loadApiKey();
     });
+  }
+
+  Future<void> _loadApiKey() async {
+    final apiKey = await _aiService.getApiKey();
+    if (mounted) {
+      setState(() {
+        _apiKey = apiKey ?? '';
+      });
+    }
   }
 
   void _toggleExpandAll() {
@@ -31,17 +43,20 @@ class _CharactersPageState extends State<CharactersPage> {
     );
 
     if (result != null && mounted) {
-      await Provider.of<CharacterProvider>(context, listen: false).addCharacter(
-        result['name']!,
-        result['description']!,
-      );
+      await Provider.of<CharacterProvider>(
+        context,
+        listen: false,
+      ).addCharacter(result['name']!, result['description']!);
     }
   }
 
   Future<void> _showEditCharacterDialog(Character character) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => EditCharacterDialog(character: character),
+      builder: (dialogContext) => EditCharacterDialog(
+        character: character,
+        hasApiKey: _apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {
@@ -123,6 +138,42 @@ class _CharactersPageState extends State<CharactersPage> {
                     );
                   }
 
+                  if (_expandedAll) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(AppTheme.spacing16),
+                      itemCount: provider.characters.length,
+                      itemBuilder: (context, index) {
+                        final character = provider.characters[index];
+                        return Container(
+                          key: ValueKey(character.id),
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(
+                            bottom: AppTheme.spacing12,
+                          ),
+                          child: DSCard(
+                            onTap: () => _showEditCharacterDialog(character),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                DSText.titleMedium(character.name),
+                                const DSSpacing.spacing8(),
+                                DSText.bodyMedium(
+                                  character.description,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+
                   return ReorderableListView.builder(
                     padding: const EdgeInsets.all(AppTheme.spacing16),
                     itemCount: provider.characters.length,
@@ -170,10 +221,8 @@ class _CharactersPageState extends State<CharactersPage> {
                               const DSSpacing.spacing8(),
                               DSText.bodyMedium(
                                 character.description,
-                                maxLines: _expandedAll ? null : 3,
-                                overflow: _expandedAll
-                                    ? null
-                                    : TextOverflow.ellipsis,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),

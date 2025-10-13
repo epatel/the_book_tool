@@ -47,11 +47,7 @@ class CharacterRepository {
 
   Future<void> delete(int id) async {
     final db = await DatabaseService.database;
-    await db.delete(
-      _tableName,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete(_tableName, where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> reorder(List<Character> characters) async {

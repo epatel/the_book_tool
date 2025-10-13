@@ -2,16 +2,10 @@ class ManifestEntry {
   final String key;
   final String value;
 
-  const ManifestEntry({
-    required this.key,
-    required this.value,
-  });
+  const ManifestEntry({required this.key, required this.value});
 
   Map<String, dynamic> toMap() {
-    return {
-      'key': key,
-      'value': value,
-    };
+    return {'key': key, 'value': value};
   }
 
   factory ManifestEntry.fromMap(Map<String, dynamic> map) {
@@ -21,14 +15,8 @@ class ManifestEntry {
     );
   }
 
-  ManifestEntry copyWith({
-    String? key,
-    String? value,
-  }) {
-    return ManifestEntry(
-      key: key ?? this.key,
-      value: value ?? this.value,
-    );
+  ManifestEntry copyWith({String? key, String? value}) {
+    return ManifestEntry(key: key ?? this.key, value: value ?? this.value);
   }
 
   @override

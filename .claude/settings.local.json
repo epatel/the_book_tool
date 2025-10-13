@@ -4,7 +4,8 @@
       "mcp__dart__pub",
       "mcp__dart__analyze_files",
       "Bash(flutter pub add:*)",
-      "mcp__dart__dart_format"
+      "mcp__dart__dart_format",
+      "Bash(flutter:*)"
     ],
     "deny": [],
     "ask": []

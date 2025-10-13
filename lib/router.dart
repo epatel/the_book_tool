@@ -5,18 +5,13 @@ final router = GoRouter(
   routes: [
     ShellRoute(
       builder: (context, state, child) {
-        return AppShell(
-          currentPath: state.uri.path,
-          child: child,
-        );
+        return AppShell(currentPath: state.uri.path, child: child);
       },
       routes: [
         GoRoute(
           path: '/book',
-          pageBuilder: (context, state) => NoTransitionPage(
-            key: state.pageKey,
-            child: const BookPage(),
-          ),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const BookPage()),
         ),
         GoRoute(
           path: '/characters',
@@ -27,17 +22,13 @@ final router = GoRouter(
         ),
         GoRoute(
           path: '/plots',
-          pageBuilder: (context, state) => NoTransitionPage(
-            key: state.pageKey,
-            child: const PlotsPage(),
-          ),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const PlotsPage()),
         ),
         GoRoute(
           path: '/misc',
-          pageBuilder: (context, state) => NoTransitionPage(
-            key: state.pageKey,
-            child: const MiscPage(),
-          ),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const MiscPage()),
         ),
       ],
     ),

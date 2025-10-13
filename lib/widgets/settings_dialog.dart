@@ -5,6 +5,9 @@ class SettingsDialog extends StatefulWidget {
   final String author;
   final bool markdown;
   final String apiKey;
+  final ThemeMode themeMode;
+  final ReadingFont readingFont;
+  final double fontSize;
 
   const SettingsDialog({
     super.key,
@@ -12,6 +15,9 @@ class SettingsDialog extends StatefulWidget {
     required this.author,
     required this.markdown,
     required this.apiKey,
+    required this.themeMode,
+    required this.readingFont,
+    this.fontSize = 14.0,
   });
 
   @override
@@ -24,6 +30,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late final TextEditingController _authorController;
   late final TextEditingController _apiKeyController;
   late bool _markdownEnabled;
+  late ThemeMode _themeMode;
+  late ReadingFont _readingFont;
+  late double _fontSize;
 
   @override
   void initState() {
@@ -32,6 +41,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _authorController = TextEditingController(text: widget.author);
     _apiKeyController = TextEditingController(text: widget.apiKey);
     _markdownEnabled = widget.markdown;
+    _themeMode = widget.themeMode;
+    _readingFont = widget.readingFont;
+    _fontSize = widget.fontSize;
   }
 
   @override
@@ -93,6 +105,108 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   const DSText.bodyMedium('Enable Markdown rendering'),
                 ],
               ),
+              const DSSpacing.spacing16(),
+              Row(
+                children: [
+                  const Expanded(flex: 1, child: DSText.bodyMedium('Theme')),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<ThemeMode>(
+                      initialValue: _themeMode,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: ThemeMode.system,
+                          child: Text('System'),
+                        ),
+                        DropdownMenuItem(
+                          value: ThemeMode.light,
+                          child: Text('Light'),
+                        ),
+                        DropdownMenuItem(
+                          value: ThemeMode.dark,
+                          child: Text('Dark'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _themeMode = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const DSSpacing.spacing16(),
+              Row(
+                children: [
+                  const Expanded(
+                    flex: 1,
+                    child: DSText.bodyMedium('Reading Font'),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<ReadingFont>(
+                      initialValue: _readingFont,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ReadingFont.values
+                          .map(
+                            (font) => DropdownMenuItem(
+                              value: font,
+                              child: Text(font.displayName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _readingFont = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const DSSpacing.spacing16(),
+              Row(
+                children: [
+                  const Expanded(
+                    flex: 1,
+                    child: DSText.bodyMedium('Font Size'),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<double>(
+                      initialValue: _fontSize,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 12.0, child: Text('12')),
+                        DropdownMenuItem(value: 14.0, child: Text('14')),
+                        DropdownMenuItem(value: 16.0, child: Text('16')),
+                        DropdownMenuItem(value: 18.0, child: Text('18')),
+                        DropdownMenuItem(value: 20.0, child: Text('20')),
+                        DropdownMenuItem(value: 22.0, child: Text('22')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _fontSize = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -111,6 +225,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 'author': _authorController.text,
                 'markdown': _markdownEnabled,
                 'apiKey': _apiKeyController.text,
+                'themeMode': _themeMode,
+                'readingFont': _readingFont,
+                'fontSize': _fontSize,
               });
             }
           },

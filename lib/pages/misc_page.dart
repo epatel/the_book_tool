@@ -8,14 +8,26 @@ class MiscPage extends StatefulWidget {
 }
 
 class _MiscPageState extends State<MiscPage> {
+  final AIService _aiService = AIService();
   bool _expandedAll = false;
+  String _apiKey = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MiscNoteProvider>(context, listen: false).loadNotes();
+      _loadApiKey();
     });
+  }
+
+  Future<void> _loadApiKey() async {
+    final apiKey = await _aiService.getApiKey();
+    if (mounted) {
+      setState(() {
+        _apiKey = apiKey ?? '';
+      });
+    }
   }
 
   void _toggleExpandAll() {
@@ -31,17 +43,20 @@ class _MiscPageState extends State<MiscPage> {
     );
 
     if (result != null && mounted) {
-      await Provider.of<MiscNoteProvider>(context, listen: false).addNote(
-        result['title']!,
-        result['content']!,
-      );
+      await Provider.of<MiscNoteProvider>(
+        context,
+        listen: false,
+      ).addNote(result['title']!, result['content']!);
     }
   }
 
   Future<void> _showEditNoteDialog(MiscNote note) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => EditMiscNoteDialog(note: note),
+      builder: (dialogContext) => EditMiscNoteDialog(
+        note: note,
+        hasApiKey: _apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {
@@ -123,6 +138,42 @@ class _MiscPageState extends State<MiscPage> {
                     );
                   }
 
+                  if (_expandedAll) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(AppTheme.spacing16),
+                      itemCount: provider.notes.length,
+                      itemBuilder: (context, index) {
+                        final note = provider.notes[index];
+                        return Container(
+                          key: ValueKey(note.id),
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(
+                            bottom: AppTheme.spacing12,
+                          ),
+                          child: DSCard(
+                            onTap: () => _showEditNoteDialog(note),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                DSText.titleMedium(note.title),
+                                const DSSpacing.spacing8(),
+                                DSText.bodyMedium(
+                                  note.content,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+
                   return ReorderableListView.builder(
                     padding: const EdgeInsets.all(AppTheme.spacing16),
                     itemCount: provider.notes.length,
@@ -168,10 +219,8 @@ class _MiscPageState extends State<MiscPage> {
                               const DSSpacing.spacing8(),
                               DSText.bodyMedium(
                                 note.content,
-                                maxLines: _expandedAll ? null : 3,
-                                overflow: _expandedAll
-                                    ? null
-                                    : TextOverflow.ellipsis,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),

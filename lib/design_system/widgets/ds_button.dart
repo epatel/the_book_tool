@@ -1,10 +1,6 @@
 import 'package:the_book_tool/index.dart';
 
-enum DSButtonType {
-  primary,
-  secondary,
-  text,
-}
+enum DSButtonType { primary, secondary, text }
 
 class DSButton extends StatelessWidget {
   final String label;
@@ -47,7 +43,7 @@ class DSButton extends StatelessWidget {
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18),
+              Icon(icon, size: AppTheme.iconSizeSmall),
               const SizedBox(width: AppTheme.spacing8),
               DSText(label),
             ],
@@ -56,20 +52,11 @@ class DSButton extends StatelessWidget {
 
     switch (type) {
       case DSButtonType.primary:
-        return FilledButton(
-          onPressed: onPressed,
-          child: buttonChild,
-        );
+        return FilledButton(onPressed: onPressed, child: buttonChild);
       case DSButtonType.secondary:
-        return OutlinedButton(
-          onPressed: onPressed,
-          child: buttonChild,
-        );
+        return OutlinedButton(onPressed: onPressed, child: buttonChild);
       case DSButtonType.text:
-        return TextButton(
-          onPressed: onPressed,
-          child: buttonChild,
-        );
+        return TextButton(onPressed: onPressed, child: buttonChild);
     }
   }
 }
@@ -88,11 +75,7 @@ class DSIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon),
-      onPressed: onPressed,
-      tooltip: tooltip,
-    );
+    return IconButton(icon: Icon(icon), onPressed: onPressed, tooltip: tooltip);
   }
 }
 

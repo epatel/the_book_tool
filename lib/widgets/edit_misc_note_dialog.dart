@@ -2,8 +2,13 @@ import 'package:the_book_tool/index.dart';
 
 class EditMiscNoteDialog extends StatefulWidget {
   final MiscNote note;
+  final bool hasApiKey;
 
-  const EditMiscNoteDialog({super.key, required this.note});
+  const EditMiscNoteDialog({
+    super.key,
+    required this.note,
+    this.hasApiKey = false,
+  });
 
   @override
   State<EditMiscNoteDialog> createState() => _EditMiscNoteDialogState();
@@ -199,16 +204,15 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
       actions: [
         Row(
           children: [
-            DSButton.text(
-              label: 'Delete',
-              onPressed: _confirmDelete,
-            ),
+            DSButton.text(label: 'Delete', onPressed: _confirmDelete),
             IconButton(
               icon: Icon(
                 _showAiPrompt ? Icons.smart_toy : Icons.smart_toy_outlined,
               ),
-              onPressed: _toggleAiPrompt,
-              tooltip: 'AI Assistant',
+              onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+              tooltip: widget.hasApiKey
+                  ? 'AI Assistant'
+                  : 'AI Assistant (API key required)',
             ),
             const Spacer(),
             DSButton.text(

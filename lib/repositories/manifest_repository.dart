@@ -29,20 +29,15 @@ class ManifestRepository {
 
   Future<void> set(String key, String value) async {
     final db = await DatabaseService.database;
-    await db.insert(
-      _tableName,
-      {'key': key, 'value': value},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert(_tableName, {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> delete(String key) async {
     final db = await DatabaseService.database;
-    await db.delete(
-      _tableName,
-      where: 'key = ?',
-      whereArgs: [key],
-    );
+    await db.delete(_tableName, where: 'key = ?', whereArgs: [key]);
   }
 
   Future<void> setMultiple(Map<String, String> entries) async {
@@ -50,11 +45,10 @@ class ManifestRepository {
     final batch = db.batch();
 
     for (final entry in entries.entries) {
-      batch.insert(
-        _tableName,
-        {'key': entry.key, 'value': entry.value},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      batch.insert(_tableName, {
+        'key': entry.key,
+        'value': entry.value,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
 
     await batch.commit(noResult: true);

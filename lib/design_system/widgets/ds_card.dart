@@ -5,12 +5,7 @@ class DSCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
 
-  const DSCard({
-    super.key,
-    required this.child,
-    this.padding,
-    this.onTap,
-  });
+  const DSCard({super.key, required this.child, this.padding, this.onTap});
 
   @override
   Widget build(BuildContext context) {
