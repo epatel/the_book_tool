@@ -85,7 +85,7 @@ class _PlotsPageState extends State<PlotsPage> {
         Column(
           children: [
             DSAppBar(
-              title: 'The Plots',
+              title: 'Plots',
               actions: [
                 IconButton(
                   icon: Icon(

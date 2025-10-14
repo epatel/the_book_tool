@@ -77,6 +77,17 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
   Future<void> _sendAiPrompt() async {
     if (_aiPromptController.text.isEmpty) return;
 
+    // If command mode is enabled, save current edits first
+    if (_enableCommands) {
+      if (_formKey.currentState!.validate()) {
+        Navigator.of(context).pop({
+          'title': _titleController.text,
+          'description': _descriptionController.text,
+        });
+      }
+      return;
+    }
+
     setState(() {
       _isLoadingAi = true;
     });
@@ -225,7 +236,7 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                         enabled: !_isLoadingAi,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: AppTheme.spacing8),
                     if (_isLoadingAi)
                       const Padding(
                         padding: EdgeInsets.all(12.0),

@@ -114,4 +114,40 @@ class DatabaseService {
       _database = null;
     }
   }
+
+  static Future<int> numberOfChapters() async {
+    final db = await database;
+    // Select COUNT(*) from chapters
+    final count = await db
+        .query('chapters', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
+
+  static Future<int> numberOfCharacters() async {
+    final db = await database;
+    // Select COUNT(*) from characters
+    final count = await db
+        .query('characters', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
+
+  static Future<int> numberOfPlots() async {
+    final db = await database;
+    // Select COUNT(*) from plots
+    final count = await db
+        .query('plots', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
+
+  static Future<int> numberOfMiscNotes() async {
+    final db = await database;
+    // Select COUNT(*) from misc_notes
+    final count = await db
+        .query('misc_notes', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
 }

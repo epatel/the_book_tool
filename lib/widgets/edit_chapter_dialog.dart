@@ -75,6 +75,17 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
   Future<void> _sendAiPrompt() async {
     if (_aiPromptController.text.isEmpty) return;
 
+    // If command mode is enabled, save current edits first
+    if (_enableCommands) {
+      if (_formKey.currentState!.validate()) {
+        Navigator.of(context).pop({
+          'title': _titleController.text,
+          'content': _contentController.text,
+        });
+      }
+      return;
+    }
+
     setState(() {
       _isLoadingAi = true;
     });
@@ -223,7 +234,7 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                         enabled: !_isLoadingAi,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: AppTheme.spacing8),
                     if (_isLoadingAi)
                       const Padding(
                         padding: EdgeInsets.all(12.0),

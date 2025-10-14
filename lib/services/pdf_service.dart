@@ -477,11 +477,14 @@ class PdfService {
       final chapter = chapters[i];
 
       // Check if first chapter is "Prologue" to adjust numbering
-      final bool isPrologue = i == 0 &&
-          chapter.title.toLowerCase().trim() == 'prologue';
-      final int chapterNumber = isPrologue ? 0 :
-          (chapters.isNotEmpty &&
-           chapters[0].title.toLowerCase().trim() == 'prologue' ? i : i + 1);
+      final bool isPrologue =
+          i == 0 && chapter.title.toLowerCase().trim() == 'prologue';
+      final int chapterNumber = isPrologue
+          ? 0
+          : (chapters.isNotEmpty &&
+                    chapters[0].title.toLowerCase().trim() == 'prologue'
+                ? i
+                : i + 1);
 
       pdf.addPage(
         pw.MultiPage(

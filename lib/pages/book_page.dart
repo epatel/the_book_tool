@@ -122,8 +122,8 @@ class _BookPageState extends State<BookPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Generating PDF...'),
+                DSSpacing.spacing16(),
+                DSText.bodyMedium('Generating PDF...'),
               ],
             ),
           ),
@@ -232,16 +232,17 @@ class _BookPageState extends State<BookPage> {
 
   String _getChapterLabel(List<Chapter> chapters, int index) {
     // Check if first chapter is "Prologue"
-    final bool isPrologue = index == 0 &&
-        chapters[index].title.toLowerCase().trim() == 'prologue';
+    final bool isPrologue =
+        index == 0 && chapters[index].title.toLowerCase().trim() == 'prologue';
 
     if (isPrologue) {
       return ''; // No label for prologue
     }
 
     // If first chapter is prologue, adjust numbering for subsequent chapters
-    final int chapterNumber = chapters.isNotEmpty &&
-        chapters[0].title.toLowerCase().trim() == 'prologue'
+    final int chapterNumber =
+        chapters.isNotEmpty &&
+            chapters[0].title.toLowerCase().trim() == 'prologue'
         ? index
         : index + 1;
 
@@ -290,7 +291,7 @@ class _BookPageState extends State<BookPage> {
                         children: [
                           Icon(
                             Icons.book_outlined,
-                            size: 64,
+                            size: AppTheme.iconSizeLarge,
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.3),
@@ -450,7 +451,7 @@ class _BookPageState extends State<BookPage> {
                               const DSSpacing.spacing8(),
                               if (_markdownEnabled)
                                 SizedBox(
-                                  height: 60,
+                                  height: AppTheme.collapsedContentHeight,
                                   child: Stack(
                                     children: [
                                       SingleChildScrollView(
@@ -473,7 +474,7 @@ class _BookPageState extends State<BookPage> {
                                         bottom: 0,
                                         left: 0,
                                         right: 0,
-                                        height: 20,
+                                        height: AppTheme.gradientOverlayHeight,
                                         child: Container(
                                           decoration: BoxDecoration(
                                             gradient: LinearGradient(
@@ -498,9 +499,9 @@ class _BookPageState extends State<BookPage> {
                                   ),
                                 )
                               else
-                                Text(
+                                DSText.bodyMedium(
                                   chapter.content,
-                                  maxLines: 3,
+                                  maxLines: AppTheme.maxLinesPreview,
                                   overflow: TextOverflow.ellipsis,
                                   style: _readingFont.getTextStyle(
                                     fontSize: _fontSize,

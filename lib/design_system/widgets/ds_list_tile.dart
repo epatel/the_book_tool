@@ -4,6 +4,7 @@ class DSListTile extends StatelessWidget {
   final IconData? leading;
   final String title;
   final String? subtitle;
+  final Widget? trailing;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -12,6 +13,7 @@ class DSListTile extends StatelessWidget {
     this.leading,
     required this.title,
     this.subtitle,
+    this.trailing,
     this.selected = false,
     this.onTap,
   });
@@ -22,6 +24,7 @@ class DSListTile extends StatelessWidget {
       leading: leading != null ? Icon(leading) : null,
       title: DSText.bodyLarge(title),
       subtitle: subtitle != null ? DSText.bodySmall(subtitle!) : null,
+      trailing: trailing,
       selected: selected,
       onTap: onTap,
     );

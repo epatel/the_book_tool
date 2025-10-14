@@ -77,6 +77,17 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
   Future<void> _sendAiPrompt() async {
     if (_aiPromptController.text.isEmpty) return;
 
+    // If command mode is enabled, save current edits first
+    if (_enableCommands) {
+      if (_formKey.currentState!.validate()) {
+        Navigator.of(context).pop({
+          'name': _nameController.text,
+          'description': _descriptionController.text,
+        });
+      }
+      return;
+    }
+
     setState(() {
       _isLoadingAi = true;
     });
@@ -225,7 +236,7 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                         enabled: !_isLoadingAi,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: AppTheme.spacing8),
                     if (_isLoadingAi)
                       const Padding(
                         padding: EdgeInsets.all(12.0),

@@ -46,7 +46,11 @@ class AIService {
 
       final systemMessage = enableCommands
           ? _buildCommandSystemMessage(itemType, context['bookData'])
-          : _buildDefaultSystemMessage(itemType, context['bookData'], currentText);
+          : _buildDefaultSystemMessage(
+              itemType,
+              context['bookData'],
+              currentText,
+            );
 
       final response = await client.createChatCompletion(
         request: CreateChatCompletionRequest(

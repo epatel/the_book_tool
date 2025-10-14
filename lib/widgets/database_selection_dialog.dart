@@ -161,7 +161,7 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
                   Row(
                     children: [
                       const DSText.bodyMedium('Current: '),
-                      const SizedBox(width: 8),
+                      SizedBox(width: AppTheme.spacing8),
                       Expanded(
                         child: DSText.bodyMedium(
                           _currentDatabase,
