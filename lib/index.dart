@@ -30,6 +30,7 @@ export 'models/chapter.dart';
 export 'models/character.dart';
 export 'models/plot.dart';
 export 'models/misc_note.dart';
+export 'models/ai_command.dart';
 
 // Services
 export 'services/database_service.dart';
@@ -37,6 +38,7 @@ export 'services/database_manager.dart';
 export 'services/window_preferences_service.dart';
 export 'services/book_data_service.dart';
 export 'services/ai_service.dart';
+export 'services/ai_command_executor.dart';
 export 'services/pdf_service.dart';
 
 // Repositories

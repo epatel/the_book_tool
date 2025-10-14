@@ -22,6 +22,7 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
   late final TextEditingController _aiPromptController;
   bool _showAiPrompt = false;
   bool _isLoadingAi = false;
+  bool _enableCommands = false;
 
   @override
   void initState() {
@@ -90,6 +91,7 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
           'content': _contentController.text,
         },
         'bookData': bookData,
+        'enableCommands': _enableCommands,
       };
 
       final aiService = AIService();
@@ -99,10 +101,35 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
       );
 
       if (response != null && mounted) {
-        // Update the content text field with AI response
-        setState(() {
-          _contentController.text = response;
-        });
+        // Handle commands if present
+        if (response.hasCommands) {
+          final executor = AICommandExecutor();
+          final results = await executor.executeCommands(
+            this.context,
+            response.commands,
+          );
+
+          // Show results
+          final successCount = results.where((r) => r.success).length;
+          final failCount = results.where((r) => !r.success).length;
+
+          if (mounted) {
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Commands executed: $successCount succeeded, $failCount failed',
+                ),
+                backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
+              ),
+            );
+          }
+        }
+        // Handle text response
+        else if (response.hasText) {
+          setState(() {
+            _contentController.text = response.text!;
+          });
+        }
       } else if (mounted) {
         // Show error if no API key or request failed
         ScaffoldMessenger.of(this.context).showSnackBar(
@@ -131,7 +158,7 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
       content: Form(
         key: _formKey,
         child: SizedBox(
-          width: 500,
+          width: 700,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -155,7 +182,7 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
                   labelText: 'Content',
                   border: OutlineInputBorder(),
                 ),
-                maxLines: 5,
+                maxLines: 10,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter content';
@@ -165,6 +192,23 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
               ),
               if (_showAiPrompt) ...[
                 const DSSpacing.spacing16(),
+                CheckboxListTile(
+                  title: const DSText.bodySmall('Enable command mode'),
+                  subtitle: const DSText.bodySmall(
+                    'Allow AI to create new chapters, characters, plots, and notes',
+                  ),
+                  value: _enableCommands,
+                  onChanged: _isLoadingAi
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _enableCommands = value ?? false;
+                          });
+                        },
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const DSSpacing.spacing8(),
                 Row(
                   children: [
                     Expanded(

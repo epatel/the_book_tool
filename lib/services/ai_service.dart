@@ -27,7 +27,7 @@ class AIService {
     return _client;
   }
 
-  Future<String?> sendPrompt({
+  Future<AIResponse?> sendPrompt({
     required String prompt,
     required Map<String, dynamic> context,
   }) async {
@@ -37,27 +37,16 @@ class AIService {
     }
 
     try {
+      final enableCommands = context['enableCommands'] == true;
       final itemType = context['currentItem']['type'];
       final currentText =
           context['currentItem']['content'] ??
           context['currentItem']['description'] ??
           '';
 
-      final systemMessage =
-          '''
-You are an AI writing assistant helping an author with their book.
-You have access to the complete book context including all chapters, characters, plots, and misc notes.
-
-The author is currently editing a $itemType.
-Full book context: ${context['bookData']}
-
-IMPORTANT: Your response should be ONLY the updated text for this $itemType.
-Do not include any explanations, suggestions, or commentary.
-Just return the improved/updated text that should replace the current content.
-
-Current text:
-$currentText
-''';
+      final systemMessage = enableCommands
+          ? _buildCommandSystemMessage(itemType, context['bookData'])
+          : _buildDefaultSystemMessage(itemType, context['bookData'], currentText);
 
       final response = await client.createChatCompletion(
         request: CreateChatCompletionRequest(
@@ -74,10 +63,77 @@ $currentText
       );
 
       final content = response.choices.first.message.content;
-      return content;
+      if (content == null || content.isEmpty) {
+        return null;
+      }
+
+      // Parse response for commands if enabled
+      if (enableCommands) {
+        final commands = AICommand.parseFromResponse(content);
+        if (commands.isNotEmpty) {
+          // If we have commands, return them without text
+          return AIResponse(commands: commands);
+        }
+      }
+
+      // Return text response (for non-command mode or if no commands found)
+      return AIResponse(text: content);
     } catch (e) {
       debugPrint('AI Service Error: $e');
       return null;
     }
+  }
+
+  String _buildDefaultSystemMessage(
+    String itemType,
+    dynamic bookData,
+    String currentText,
+  ) {
+    return '''
+You are an AI writing assistant helping an author with their book.
+You have access to the complete book context including all chapters, characters, plots, and misc notes.
+
+The author is currently editing a $itemType.
+Full book context: $bookData
+
+IMPORTANT: Your response should be ONLY the updated text for this $itemType.
+Do not include any explanations, suggestions, or commentary.
+Just return the improved/updated text that should replace the current content.
+
+Current text:
+$currentText
+''';
+  }
+
+  String _buildCommandSystemMessage(String itemType, dynamic bookData) {
+    return '''
+You are an AI writing assistant helping an author with their book.
+You have access to the complete book context including all chapters, characters, plots, and misc notes.
+
+The author is currently editing a $itemType.
+Full book context: $bookData
+
+You can create new book items by responding with JSON commands in markdown code blocks.
+
+Supported commands:
+- add_chapter: {"action": "add_chapter", "data": {"title": "...", "content": "..."}}
+- add_character: {"action": "add_character", "data": {"name": "...", "description": "..."}}
+- add_plot: {"action": "add_plot", "data": {"title": "...", "description": "..."}}
+- add_misc_note: {"action": "add_misc_note", "data": {"title": "...", "content": "..."}}
+
+For multiple commands, use a JSON array:
+```json
+[
+  {"action": "add_chapter", "data": {"title": "Chapter 1", "content": "..."}},
+  {"action": "add_character", "data": {"name": "Hero", "description": "..."}}
+]
+```
+
+IMPORTANT:
+- Wrap JSON in markdown code blocks with ```json
+- ONLY return JSON commands, no other text or explanations
+- Ensure all required fields are present (title/name, content/description)
+- Create meaningful, complete content for each item
+''';
   }
 }
