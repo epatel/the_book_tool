@@ -20,9 +20,13 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _aiPromptController;
+  late final FocusNode _descriptionFocusNode;
+  late final ScrollController _descriptionScrollController;
   bool _showAiPrompt = false;
   bool _isLoadingAi = false;
   bool _enableCommands = false;
+  TextSelection? _savedSelection;
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
@@ -32,13 +36,48 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
       text: widget.plot.description,
     );
     _aiPromptController = TextEditingController();
+    _descriptionFocusNode = FocusNode();
+    _descriptionScrollController = ScrollController();
+
+    // Listen to AI prompt changes to update send button state
+    _aiPromptController.addListener(() {
+      setState(() {});
+    });
+
+    // Listen to focus changes to save/restore selection
+    _descriptionFocusNode.addListener(_onDescriptionFocusChange);
+
+    // Listen to scroll changes to update overlay
+    _descriptionScrollController.addListener(_onDescriptionScrollChange);
+  }
+
+  void _onDescriptionFocusChange() {
+    setState(() {
+      if (_descriptionFocusNode.hasFocus) {
+        if (_savedSelection != null) {
+          _descriptionController.selection = _savedSelection!;
+        }
+      } else {
+        _savedSelection = _descriptionController.selection;
+      }
+    });
+  }
+
+  void _onDescriptionScrollChange() {
+    setState(() {
+      _scrollOffset = _descriptionScrollController.offset;
+    });
   }
 
   @override
   void dispose() {
+    _descriptionFocusNode.removeListener(_onDescriptionFocusChange);
+    _descriptionScrollController.removeListener(_onDescriptionScrollChange);
     _titleController.dispose();
     _descriptionController.dispose();
     _aiPromptController.dispose();
+    _descriptionFocusNode.dispose();
+    _descriptionScrollController.dispose();
     super.dispose();
   }
 
@@ -79,13 +118,17 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
 
     // If command mode is enabled, save current edits first
     if (_enableCommands) {
-      if (_formKey.currentState!.validate()) {
-        Navigator.of(context).pop({
-          'title': _titleController.text,
-          'description': _descriptionController.text,
-        });
-      }
-      return;
+      if (!_formKey.currentState!.validate()) return;
+
+      final updatedPlot = widget.plot.copyWith(
+        title: _titleController.text,
+        description: _descriptionController.text,
+      );
+
+      await Provider.of<PlotProvider>(
+        context,
+        listen: false,
+      ).updatePlot(updatedPlot);
     }
 
     setState(() {
@@ -96,12 +139,26 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
+      // Capture cursor position and selection for non-command mode
+      final selection = _descriptionController.selection;
+      final description = _descriptionController.text;
+
       final context = {
         'currentItem': {
           'type': 'plot',
           'id': widget.plot.id,
           'title': _titleController.text,
-          'description': _descriptionController.text,
+          'description': description,
+          'cursorPosition': selection.start,
+          'selectedText': selection.isValid && !selection.isCollapsed
+              ? description.substring(selection.start, selection.end)
+              : '',
+          'textBeforeCursor': selection.isValid
+              ? description.substring(0, selection.start)
+              : '',
+          'textAfterCursor': selection.isValid
+              ? description.substring(selection.end)
+              : '',
         },
         'bookData': bookData,
         'enableCommands': _enableCommands,
@@ -137,11 +194,22 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
             );
           }
         }
-        // Handle text response
+        // Handle text response - insert at cursor or replace selection
         else if (response.hasText) {
           setState(() {
-            _descriptionController.text = response.text!;
+            final newText = description.replaceRange(
+              selection.start,
+              selection.end,
+              response.text!,
+            );
+            _descriptionController.text = newText;
+            // Move cursor to end of inserted text
+            _descriptionController.selection = TextSelection.collapsed(
+              offset: selection.start + response.text!.length,
+            );
           });
+          // Restore focus to description field to show cursor
+          _descriptionFocusNode.requestFocus();
         }
       } else if (mounted) {
         // Show error if no API key or request failed
@@ -189,19 +257,48 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                 },
               ),
               const DSSpacing.spacing16(),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 10,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
+              Stack(
+                children: [
+                  TextFormField(
+                    controller: _descriptionController,
+                    focusNode: _descriptionFocusNode,
+                    scrollController: _descriptionScrollController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                    ),
+                    maxLines: 10,
+                    readOnly: _isLoadingAi,
+                    showCursor: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a description';
+                      }
+                      return null;
+                    },
+                  ),
+                  if (!_descriptionFocusNode.hasFocus &&
+                      _savedSelection != null)
+                    Positioned.fill(
+                      child: ClipRect(
+                        child: IgnorePointer(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 19, 12, 20),
+                            child: TextSelectionHighlight(
+                              text: _descriptionController.text,
+                              selection: _savedSelection!,
+                              style:
+                                  Theme.of(context).textTheme.bodyLarge ??
+                                  const TextStyle(fontSize: 16.0),
+                              maxLines: 10,
+                              scrollOffset: _scrollOffset,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               if (_showAiPrompt) ...[
                 const DSSpacing.spacing16(),
@@ -227,10 +324,12 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                     Expanded(
                       child: TextField(
                         controller: _aiPromptController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'AI Prompt',
-                          border: OutlineInputBorder(),
-                          hintText: 'Enter your prompt...',
+                          border: const OutlineInputBorder(),
+                          hintText: _enableCommands
+                              ? 'AI can create new items with commands...'
+                              : 'AI will insert at cursor or replace selection...',
                         ),
                         maxLines: 2,
                         enabled: !_isLoadingAi,
@@ -238,18 +337,20 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                     ),
                     SizedBox(width: AppTheme.spacing8),
                     if (_isLoadingAi)
-                      const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
+                      const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
                     else
                       IconButton(
                         icon: const Icon(Icons.send),
-                        onPressed: _sendAiPrompt,
+                        onPressed: _aiPromptController.text.isEmpty
+                            ? null
+                            : _sendAiPrompt,
                         tooltip: 'Send',
                       ),
                   ],

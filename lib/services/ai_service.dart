@@ -44,12 +44,22 @@ class AIService {
           context['currentItem']['description'] ??
           '';
 
+      final cursorInfo = !enableCommands
+          ? {
+              'cursorPosition': context['currentItem']['cursorPosition'],
+              'selectedText': context['currentItem']['selectedText'],
+              'textBeforeCursor': context['currentItem']['textBeforeCursor'],
+              'textAfterCursor': context['currentItem']['textAfterCursor'],
+            }
+          : null;
+
       final systemMessage = enableCommands
           ? _buildCommandSystemMessage(itemType, context['bookData'])
           : _buildDefaultSystemMessage(
               itemType,
               context['bookData'],
               currentText,
+              cursorInfo,
             );
 
       final response = await client.createChatCompletion(
@@ -92,7 +102,13 @@ class AIService {
     String itemType,
     dynamic bookData,
     String currentText,
+    Map<String, dynamic>? cursorInfo,
   ) {
+    final selectedText = cursorInfo?['selectedText'] ?? '';
+    final textBefore = cursorInfo?['textBeforeCursor'] ?? '';
+    final textAfter = cursorInfo?['textAfterCursor'] ?? '';
+    final hasSelection = selectedText.isNotEmpty;
+
     return '''
 You are an AI writing assistant helping an author with their book.
 You have access to the complete book context including all chapters, characters, plots, and misc notes.
@@ -100,12 +116,31 @@ You have access to the complete book context including all chapters, characters,
 The author is currently editing a $itemType.
 Full book context: $bookData
 
-IMPORTANT: Your response should be ONLY the updated text for this $itemType.
-Do not include any explanations, suggestions, or commentary.
-Just return the improved/updated text that should replace the current content.
+IMPORTANT EDITING BEHAVIOR:
+- Your response will be ${hasSelection ? 'REPLACING the selected text' : 'inserted at the cursor position'}
+- Do NOT return the entire content - only provide the text to ${hasSelection ? 'replace the selection' : 'insert'}
+- Do not include explanations or commentary - just the text to ${hasSelection ? 'replace with' : 'insert'}
 
-Current text:
+Full current text:
 $currentText
+
+${hasSelection ? '''
+SELECTED TEXT (will be replaced by your response):
+$selectedText
+''' : ''}
+CONTEXT - Text before cursor:
+${textBefore.isEmpty
+        ? '(beginning of text)'
+        : textBefore.length > 200
+        ? '...${textBefore.substring(textBefore.length - 200)}'
+        : textBefore}
+
+CONTEXT - Text after cursor:
+${textAfter.isEmpty
+        ? '(end of text)'
+        : textAfter.length > 200
+        ? '${textAfter.substring(0, 200)}...'
+        : textAfter}
 ''';
   }
 

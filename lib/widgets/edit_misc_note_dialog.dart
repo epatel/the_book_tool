@@ -20,9 +20,13 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
   late final TextEditingController _aiPromptController;
+  late final FocusNode _contentFocusNode;
+  late final ScrollController _contentScrollController;
   bool _showAiPrompt = false;
   bool _isLoadingAi = false;
   bool _enableCommands = false;
+  TextSelection? _savedSelection;
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
@@ -30,13 +34,48 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
     _titleController = TextEditingController(text: widget.note.title);
     _contentController = TextEditingController(text: widget.note.content);
     _aiPromptController = TextEditingController();
+    _contentFocusNode = FocusNode();
+    _contentScrollController = ScrollController();
+
+    // Listen to AI prompt changes to update send button state
+    _aiPromptController.addListener(() {
+      setState(() {});
+    });
+
+    // Listen to focus changes to save/restore selection
+    _contentFocusNode.addListener(_onContentFocusChange);
+
+    // Listen to scroll changes to update overlay
+    _contentScrollController.addListener(_onContentScrollChange);
+  }
+
+  void _onContentFocusChange() {
+    setState(() {
+      if (_contentFocusNode.hasFocus) {
+        if (_savedSelection != null) {
+          _contentController.selection = _savedSelection!;
+        }
+      } else {
+        _savedSelection = _contentController.selection;
+      }
+    });
+  }
+
+  void _onContentScrollChange() {
+    setState(() {
+      _scrollOffset = _contentScrollController.offset;
+    });
   }
 
   @override
   void dispose() {
+    _contentFocusNode.removeListener(_onContentFocusChange);
+    _contentScrollController.removeListener(_onContentScrollChange);
     _titleController.dispose();
     _contentController.dispose();
     _aiPromptController.dispose();
+    _contentFocusNode.dispose();
+    _contentScrollController.dispose();
     super.dispose();
   }
 
@@ -77,13 +116,17 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
 
     // If command mode is enabled, save current edits first
     if (_enableCommands) {
-      if (_formKey.currentState!.validate()) {
-        Navigator.of(context).pop({
-          'title': _titleController.text,
-          'content': _contentController.text,
-        });
-      }
-      return;
+      if (!_formKey.currentState!.validate()) return;
+
+      final updatedNote = widget.note.copyWith(
+        title: _titleController.text,
+        content: _contentController.text,
+      );
+
+      await Provider.of<MiscNoteProvider>(
+        context,
+        listen: false,
+      ).updateNote(updatedNote);
     }
 
     setState(() {
@@ -94,12 +137,26 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
+      // Capture cursor position and selection for non-command mode
+      final selection = _contentController.selection;
+      final content = _contentController.text;
+
       final context = {
         'currentItem': {
           'type': 'miscNote',
           'id': widget.note.id,
           'title': _titleController.text,
-          'content': _contentController.text,
+          'content': content,
+          'cursorPosition': selection.start,
+          'selectedText': selection.isValid && !selection.isCollapsed
+              ? content.substring(selection.start, selection.end)
+              : '',
+          'textBeforeCursor': selection.isValid
+              ? content.substring(0, selection.start)
+              : '',
+          'textAfterCursor': selection.isValid
+              ? content.substring(selection.end)
+              : '',
         },
         'bookData': bookData,
         'enableCommands': _enableCommands,
@@ -135,11 +192,22 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
             );
           }
         }
-        // Handle text response
+        // Handle text response - insert at cursor or replace selection
         else if (response.hasText) {
           setState(() {
-            _contentController.text = response.text!;
+            final newText = content.replaceRange(
+              selection.start,
+              selection.end,
+              response.text!,
+            );
+            _contentController.text = newText;
+            // Move cursor to end of inserted text
+            _contentController.selection = TextSelection.collapsed(
+              offset: selection.start + response.text!.length,
+            );
           });
+          // Restore focus to content field to show cursor
+          _contentFocusNode.requestFocus();
         }
       } else if (mounted) {
         // Show error if no API key or request failed
@@ -187,19 +255,47 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
                 },
               ),
               const DSSpacing.spacing16(),
-              TextFormField(
-                controller: _contentController,
-                decoration: const InputDecoration(
-                  labelText: 'Content',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 10,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter content';
-                  }
-                  return null;
-                },
+              Stack(
+                children: [
+                  TextFormField(
+                    controller: _contentController,
+                    focusNode: _contentFocusNode,
+                    scrollController: _contentScrollController,
+                    decoration: const InputDecoration(
+                      labelText: 'Content',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                    ),
+                    maxLines: 10,
+                    readOnly: _isLoadingAi,
+                    showCursor: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter content';
+                      }
+                      return null;
+                    },
+                  ),
+                  if (!_contentFocusNode.hasFocus && _savedSelection != null)
+                    Positioned.fill(
+                      child: ClipRect(
+                        child: IgnorePointer(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 19, 12, 20),
+                            child: TextSelectionHighlight(
+                              text: _contentController.text,
+                              selection: _savedSelection!,
+                              style:
+                                  Theme.of(context).textTheme.bodyLarge ??
+                                  const TextStyle(fontSize: 16.0),
+                              maxLines: 10,
+                              scrollOffset: _scrollOffset,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               if (_showAiPrompt) ...[
                 const DSSpacing.spacing16(),
@@ -225,10 +321,12 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
                     Expanded(
                       child: TextField(
                         controller: _aiPromptController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'AI Prompt',
-                          border: OutlineInputBorder(),
-                          hintText: 'Enter your prompt...',
+                          border: const OutlineInputBorder(),
+                          hintText: _enableCommands
+                              ? 'AI can create new items with commands...'
+                              : 'AI will insert at cursor or replace selection...',
                         ),
                         maxLines: 2,
                         enabled: !_isLoadingAi,
@@ -236,18 +334,20 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
                     ),
                     SizedBox(width: AppTheme.spacing8),
                     if (_isLoadingAi)
-                      const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
+                      const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
                     else
                       IconButton(
                         icon: const Icon(Icons.send),
-                        onPressed: _sendAiPrompt,
+                        onPressed: _aiPromptController.text.isEmpty
+                            ? null
+                            : _sendAiPrompt,
                         tooltip: 'Send',
                       ),
                   ],

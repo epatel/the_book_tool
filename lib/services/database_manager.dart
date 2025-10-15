@@ -74,4 +74,25 @@ class DatabaseManager {
     // Initialize new database
     await DatabaseService.initialize();
   }
+
+  Future<void> deleteDatabase(String databaseName) async {
+    final currentDb = await getCurrentDatabaseName();
+
+    // Prevent deleting the current database
+    if (databaseName == currentDb) {
+      throw Exception(
+        'Cannot delete the current database. Switch to another database first.',
+      );
+    }
+
+    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final dbPath = path.join(documentsDirectory.path, databaseName);
+    final file = File(dbPath);
+
+    if (!await file.exists()) {
+      throw Exception('Database "$databaseName" does not exist');
+    }
+
+    await file.delete();
+  }
 }

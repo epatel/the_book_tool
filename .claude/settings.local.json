@@ -4,7 +4,10 @@
       "Bash(done)",
       "mcp__dart__analyze_files",
       "Bash(dart format:*)",
-      "mcp__dart__run_tests"
+      "mcp__dart__run_tests",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.flutter.dev)",
+      "mcp__dart__dart_format"
     ],
     "deny": [],
     "ask": []

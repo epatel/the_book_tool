@@ -147,6 +147,55 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
     }
   }
 
+  Future<void> _deleteDatabase(String databaseName) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const DSText.titleLarge('Delete Database'),
+        content: DSText.bodyMedium(
+          'Are you sure you want to delete "$databaseName"? This action cannot be undone and all data will be lost.',
+        ),
+        actions: [
+          DSButton.text(
+            label: 'Cancel',
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          DSButton.primary(
+            label: 'Delete',
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _databaseManager.deleteDatabase(databaseName);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: DSText.bodyMedium('Database deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Reload the database list
+        await _loadDatabases();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: DSText.bodyMedium('Error deleting database: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -204,7 +253,15 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
                                           context,
                                         ).colorScheme.primary,
                                       )
-                                    : null,
+                                    : IconButton(
+                                        icon: const Icon(Icons.delete_outline),
+                                        onPressed: () =>
+                                            _deleteDatabase(dbName),
+                                        tooltip: 'Delete database',
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
+                                      ),
                                 onTap: () => _selectDatabase(dbName),
                                 selected: isCurrent,
                               );

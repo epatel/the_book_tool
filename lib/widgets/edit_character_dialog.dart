@@ -20,9 +20,12 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _aiPromptController;
+  late final FocusNode _descriptionFocusNode;
+  late final ScrollController _descriptionScrollController;
   bool _showAiPrompt = false;
   bool _isLoadingAi = false;
-  bool _enableCommands = false;
+  TextSelection? _savedSelection;
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
@@ -32,13 +35,48 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
       text: widget.character.description,
     );
     _aiPromptController = TextEditingController();
+    _descriptionFocusNode = FocusNode();
+    _descriptionScrollController = ScrollController();
+
+    // Listen to AI prompt changes to update send button state
+    _aiPromptController.addListener(() {
+      setState(() {});
+    });
+
+    // Listen to focus changes to save/restore selection
+    _descriptionFocusNode.addListener(_onDescriptionFocusChange);
+
+    // Listen to scroll changes to update overlay
+    _descriptionScrollController.addListener(_onDescriptionScrollChange);
+  }
+
+  void _onDescriptionFocusChange() {
+    setState(() {
+      if (_descriptionFocusNode.hasFocus) {
+        if (_savedSelection != null) {
+          _descriptionController.selection = _savedSelection!;
+        }
+      } else {
+        _savedSelection = _descriptionController.selection;
+      }
+    });
+  }
+
+  void _onDescriptionScrollChange() {
+    setState(() {
+      _scrollOffset = _descriptionScrollController.offset;
+    });
   }
 
   @override
   void dispose() {
+    _descriptionFocusNode.removeListener(_onDescriptionFocusChange);
+    _descriptionScrollController.removeListener(_onDescriptionScrollChange);
     _nameController.dispose();
     _descriptionController.dispose();
     _aiPromptController.dispose();
+    _descriptionFocusNode.dispose();
+    _descriptionScrollController.dispose();
     super.dispose();
   }
 
@@ -77,17 +115,6 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
   Future<void> _sendAiPrompt() async {
     if (_aiPromptController.text.isEmpty) return;
 
-    // If command mode is enabled, save current edits first
-    if (_enableCommands) {
-      if (_formKey.currentState!.validate()) {
-        Navigator.of(context).pop({
-          'name': _nameController.text,
-          'description': _descriptionController.text,
-        });
-      }
-      return;
-    }
-
     setState(() {
       _isLoadingAi = true;
     });
@@ -96,15 +123,29 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
+      // Capture cursor position and selection for non-command mode
+      final selection = _descriptionController.selection;
+      final description = _descriptionController.text;
+
       final context = {
         'currentItem': {
           'type': 'character',
           'id': widget.character.id,
           'name': _nameController.text,
-          'description': _descriptionController.text,
+          'description': description,
+          'cursorPosition': selection.start,
+          'selectedText': selection.isValid && !selection.isCollapsed
+              ? description.substring(selection.start, selection.end)
+              : '',
+          'textBeforeCursor': selection.isValid
+              ? description.substring(0, selection.start)
+              : '',
+          'textAfterCursor': selection.isValid
+              ? description.substring(selection.end)
+              : '',
         },
         'bookData': bookData,
-        'enableCommands': _enableCommands,
+        'enableCommands': false,
       };
 
       final aiService = AIService();
@@ -114,34 +155,22 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
       );
 
       if (response != null && mounted) {
-        // Handle commands if present
-        if (response.hasCommands) {
-          final executor = AICommandExecutor();
-          final results = await executor.executeCommands(
-            this.context,
-            response.commands,
-          );
-
-          // Show results
-          final successCount = results.where((r) => r.success).length;
-          final failCount = results.where((r) => !r.success).length;
-
-          if (mounted) {
-            ScaffoldMessenger.of(this.context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Commands executed: $successCount succeeded, $failCount failed',
-                ),
-                backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
-              ),
-            );
-          }
-        }
-        // Handle text response
-        else if (response.hasText) {
+        // Handle text response - insert at cursor or replace selection
+        if (response.hasText) {
           setState(() {
-            _descriptionController.text = response.text!;
+            final newText = description.replaceRange(
+              selection.start,
+              selection.end,
+              response.text!,
+            );
+            _descriptionController.text = newText;
+            // Move cursor to end of inserted text
+            _descriptionController.selection = TextSelection.collapsed(
+              offset: selection.start + response.text!.length,
+            );
           });
+          // Restore focus to description field to show cursor
+          _descriptionFocusNode.requestFocus();
         }
       } else if (mounted) {
         // Show error if no API key or request failed
@@ -189,39 +218,51 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                 },
               ),
               const DSSpacing.spacing16(),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 10,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
+              Stack(
+                children: [
+                  TextFormField(
+                    controller: _descriptionController,
+                    focusNode: _descriptionFocusNode,
+                    scrollController: _descriptionScrollController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                    ),
+                    maxLines: 10,
+                    readOnly: _isLoadingAi,
+                    showCursor: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a description';
+                      }
+                      return null;
+                    },
+                  ),
+                  if (!_descriptionFocusNode.hasFocus &&
+                      _savedSelection != null)
+                    Positioned.fill(
+                      child: ClipRect(
+                        child: IgnorePointer(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 19, 12, 20),
+                            child: TextSelectionHighlight(
+                              text: _descriptionController.text,
+                              selection: _savedSelection!,
+                              style:
+                                  Theme.of(context).textTheme.bodyLarge ??
+                                  const TextStyle(fontSize: 16.0),
+                              maxLines: 10,
+                              scrollOffset: _scrollOffset,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               if (_showAiPrompt) ...[
                 const DSSpacing.spacing16(),
-                CheckboxListTile(
-                  title: const DSText.bodySmall('Enable command mode'),
-                  subtitle: const DSText.bodySmall(
-                    'Allow AI to create new chapters, characters, plots, and notes',
-                  ),
-                  value: _enableCommands,
-                  onChanged: _isLoadingAi
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _enableCommands = value ?? false;
-                          });
-                        },
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const DSSpacing.spacing8(),
                 Row(
                   children: [
                     Expanded(
@@ -230,7 +271,8 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                         decoration: const InputDecoration(
                           labelText: 'AI Prompt',
                           border: OutlineInputBorder(),
-                          hintText: 'Enter your prompt...',
+                          hintText:
+                              'AI will insert at cursor or replace selection...',
                         ),
                         maxLines: 2,
                         enabled: !_isLoadingAi,
@@ -238,18 +280,20 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                     ),
                     SizedBox(width: AppTheme.spacing8),
                     if (_isLoadingAi)
-                      const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
+                      const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
                     else
                       IconButton(
                         icon: const Icon(Icons.send),
-                        onPressed: _sendAiPrompt,
+                        onPressed: _aiPromptController.text.isEmpty
+                            ? null
+                            : _sendAiPrompt,
                         tooltip: 'Send',
                       ),
                   ],

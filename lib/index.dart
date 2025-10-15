@@ -66,6 +66,7 @@ export 'widgets/edit_plot_dialog.dart';
 export 'widgets/edit_misc_note_dialog.dart';
 export 'widgets/settings_dialog.dart';
 export 'widgets/database_selection_dialog.dart';
+export 'widgets/text_selection_overlay.dart';
 
 // Local files
 export 'app.dart';
