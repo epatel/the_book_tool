@@ -5,6 +5,7 @@ class SettingsDialog extends StatefulWidget {
   final String author;
   final bool markdown;
   final String apiKey;
+  final String contextPrompt;
   final ThemeMode themeMode;
   final ReadingFont readingFont;
   final double fontSize;
@@ -15,6 +16,7 @@ class SettingsDialog extends StatefulWidget {
     required this.author,
     required this.markdown,
     required this.apiKey,
+    this.contextPrompt = '',
     required this.themeMode,
     required this.readingFont,
     this.fontSize = 14.0,
@@ -29,6 +31,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _authorController;
   late final TextEditingController _apiKeyController;
+  late final TextEditingController _contextPromptController;
   late bool _markdownEnabled;
   late ThemeMode _themeMode;
   late ReadingFont _readingFont;
@@ -40,6 +43,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _nameController = TextEditingController(text: widget.name);
     _authorController = TextEditingController(text: widget.author);
     _apiKeyController = TextEditingController(text: widget.apiKey);
+    _contextPromptController = TextEditingController(
+      text: widget.contextPrompt,
+    );
     _markdownEnabled = widget.markdown;
     _themeMode = widget.themeMode;
     _readingFont = widget.readingFont;
@@ -51,6 +57,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _nameController.dispose();
     _authorController.dispose();
     _apiKeyController.dispose();
+    _contextPromptController.dispose();
     super.dispose();
   }
 
@@ -89,6 +96,17 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   hintText: 'sk-...',
                 ),
                 obscureText: true,
+              ),
+              const DSSpacing.spacing16(),
+              TextFormField(
+                controller: _contextPromptController,
+                decoration: const InputDecoration(
+                  labelText: 'AI Context Prompt (optional)',
+                  border: OutlineInputBorder(),
+                  hintText:
+                      'Additional context for AI (e.g., genre, style, themes)...',
+                ),
+                maxLines: 3,
               ),
               const DSSpacing.spacing16(),
               Row(
@@ -225,6 +243,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 'author': _authorController.text,
                 'markdown': _markdownEnabled,
                 'apiKey': _apiKeyController.text,
+                'contextPrompt': _contextPromptController.text,
                 'themeMode': _themeMode,
                 'readingFont': _readingFont,
                 'fontSize': _fontSize,

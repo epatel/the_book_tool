@@ -49,6 +49,17 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
 
     // Listen to scroll changes to update overlay
     _descriptionScrollController.addListener(_onDescriptionScrollChange);
+
+    // Listen to selection changes to update saved selection when unfocused
+    _descriptionController.addListener(_onDescriptionSelectionChange);
+  }
+
+  void _onDescriptionSelectionChange() {
+    if (!_descriptionFocusNode.hasFocus) {
+      setState(() {
+        _savedSelection = _descriptionController.selection;
+      });
+    }
   }
 
   void _onDescriptionFocusChange() {
@@ -73,6 +84,7 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
   void dispose() {
     _descriptionFocusNode.removeListener(_onDescriptionFocusChange);
     _descriptionScrollController.removeListener(_onDescriptionScrollChange);
+    _descriptionController.removeListener(_onDescriptionSelectionChange);
     _titleController.dispose();
     _descriptionController.dispose();
     _aiPromptController.dispose();
@@ -203,12 +215,15 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
               response.text!,
             );
             _descriptionController.text = newText;
-            // Move cursor to end of inserted text
-            _descriptionController.selection = TextSelection.collapsed(
-              offset: selection.start + response.text!.length,
+            // Select the inserted text
+            final newSelection = TextSelection(
+              baseOffset: selection.start,
+              extentOffset: selection.start + response.text!.length,
             );
+            _descriptionController.selection = newSelection;
+            _savedSelection = newSelection;
           });
-          // Restore focus to description field to show cursor
+          // Restore focus to description field to show selection
           _descriptionFocusNode.requestFocus();
         }
       } else if (mounted) {

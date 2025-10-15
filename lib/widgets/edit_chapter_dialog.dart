@@ -46,6 +46,17 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
 
     // Listen to scroll changes to update overlay
     _contentScrollController.addListener(_onContentScrollChange);
+
+    // Listen to selection changes to update saved selection when unfocused
+    _contentController.addListener(_onContentSelectionChange);
+  }
+
+  void _onContentSelectionChange() {
+    if (!_contentFocusNode.hasFocus) {
+      setState(() {
+        _savedSelection = _contentController.selection;
+      });
+    }
   }
 
   void _onContentFocusChange() {
@@ -70,6 +81,7 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
   void dispose() {
     _contentFocusNode.removeListener(_onContentFocusChange);
     _contentScrollController.removeListener(_onContentScrollChange);
+    _contentController.removeListener(_onContentSelectionChange);
     _titleController.dispose();
     _contentController.dispose();
     _aiPromptController.dispose();
@@ -162,12 +174,15 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
               response.text!,
             );
             _contentController.text = newText;
-            // Move cursor to end of inserted text
-            _contentController.selection = TextSelection.collapsed(
-              offset: selection.start + response.text!.length,
+            // Select the inserted text
+            final newSelection = TextSelection(
+              baseOffset: selection.start,
+              extentOffset: selection.start + response.text!.length,
             );
+            _contentController.selection = newSelection;
+            _savedSelection = newSelection;
           });
-          // Restore focus to content field to show cursor
+          // Restore focus to content field to show selection
           _contentFocusNode.requestFocus();
         }
       } else if (mounted) {

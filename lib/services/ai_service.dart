@@ -37,6 +37,11 @@ class AIService {
     }
 
     try {
+      // Get context prompt from manifest
+      final manifestRepo = ManifestRepository();
+      final contextPrompt =
+          (await manifestRepo.get('ContextPrompt'))?.value ?? '';
+
       final enableCommands = context['enableCommands'] == true;
       final itemType = context['currentItem']['type'];
       final currentText =
@@ -54,12 +59,17 @@ class AIService {
           : null;
 
       final systemMessage = enableCommands
-          ? _buildCommandSystemMessage(itemType, context['bookData'])
+          ? _buildCommandSystemMessage(
+              itemType,
+              context['bookData'],
+              contextPrompt,
+            )
           : _buildDefaultSystemMessage(
               itemType,
               context['bookData'],
               currentText,
               cursorInfo,
+              contextPrompt,
             );
 
       final response = await client.createChatCompletion(
@@ -103,6 +113,7 @@ class AIService {
     dynamic bookData,
     String currentText,
     Map<String, dynamic>? cursorInfo,
+    String contextPrompt,
   ) {
     final selectedText = cursorInfo?['selectedText'] ?? '';
     final textBefore = cursorInfo?['textBeforeCursor'] ?? '';
@@ -111,7 +122,7 @@ class AIService {
 
     return '''
 You are an AI writing assistant helping an author with their book.
-You have access to the complete book context including all chapters, characters, plots, and misc notes.
+You have access to the complete book context including all chapters, characters, plots, and misc notes.${contextPrompt.isNotEmpty ? '\n\nAdditional Context: $contextPrompt' : ''}
 
 The author is currently editing a $itemType.
 Full book context: $bookData
@@ -144,10 +155,14 @@ ${textAfter.isEmpty
 ''';
   }
 
-  String _buildCommandSystemMessage(String itemType, dynamic bookData) {
+  String _buildCommandSystemMessage(
+    String itemType,
+    dynamic bookData,
+    String contextPrompt,
+  ) {
     return '''
 You are an AI writing assistant helping an author with their book.
-You have access to the complete book context including all chapters, characters, plots, and misc notes.
+You have access to the complete book context including all chapters, characters, plots, and misc notes.${contextPrompt.isNotEmpty ? '\n\nAdditional Context: $contextPrompt' : ''}
 
 The author is currently editing a $itemType.
 Full book context: $bookData

@@ -120,7 +120,7 @@ class _AppShellState extends State<AppShell> {
                             context,
                           ).colorScheme.onPrimaryContainer,
                         ),
-                        tooltip: 'Database',
+                        tooltip: 'Library',
                         onPressed: _showDatabaseDialog,
                       ),
                     ],

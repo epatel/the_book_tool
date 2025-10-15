@@ -55,13 +55,13 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
     final result = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const DSText.titleLarge('Create New Database'),
+        title: const DSText.titleLarge('Create New Book'),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: nameController,
             decoration: const InputDecoration(
-              labelText: 'Database Name',
+              labelText: 'Book Name',
               border: OutlineInputBorder(),
               hintText: 'my_book',
               helperText: '.db extension will be added automatically',
@@ -152,7 +152,7 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const DSText.titleLarge('Delete Database'),
+        title: const DSText.titleLarge('Delete Book'),
         content: DSText.bodyMedium(
           'Are you sure you want to delete "$databaseName"? This action cannot be undone and all data will be lost.',
         ),
@@ -199,7 +199,7 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const DSText.titleLarge('Select Database'),
+      title: const DSText.titleLarge('Select Book'),
       content: SizedBox(
         width: 400,
         height: 400,
@@ -246,22 +246,55 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
                                       ? Theme.of(context).colorScheme.primary
                                       : null,
                                 ),
-                                trailing: isCurrent
-                                    ? Icon(
-                                        Icons.check_circle,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      )
-                                    : IconButton(
-                                        icon: const Icon(Icons.delete_outline),
-                                        onPressed: () =>
-                                            _deleteDatabase(dbName),
-                                        tooltip: 'Delete database',
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.error,
-                                      ),
+                                trailing: SizedBox(
+                                  width: 40,
+                                  child: isCurrent
+                                      ? Icon(
+                                          Icons.check_circle,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        )
+                                      : PopupMenuButton<String>(
+                                          icon: Icon(
+                                            Icons.more_vert,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
+                                          ),
+                                          onSelected: (value) {
+                                            if (value == 'delete') {
+                                              _deleteDatabase(dbName);
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem<String>(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.delete_outline,
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.error,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Text(
+                                                    'Delete',
+                                                    style: TextStyle(
+                                                      color: Theme.of(
+                                                        context,
+                                                      ).colorScheme.error,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
                                 onTap: () => _selectDatabase(dbName),
                                 selected: isCurrent,
                               );
