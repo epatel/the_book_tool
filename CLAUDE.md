@@ -79,8 +79,11 @@ The app has a comprehensive design system in `lib/design_system/`:
   - `DSDialog`: Dialog wrapper with consistent styling
   - `DSEmptyState`: Empty state placeholder with icon and text
   - `DSLoading`: Loading indicator
+  - `TextSelectionHighlight`: Overlay widget for showing cursor/selection when TextField is unfocused (see AI Integration section)
 
 All UI components should use design system widgets instead of raw Flutter widgets. Typography uses named constructors like `DSText.headlineSmall()`, `DSText.bodyLarge()`, etc. The `style` parameter on DSText components allows overriding specific properties while maintaining base styles.
+
+**Color opacity**: Use `color.withValues(alpha: 0.6)` for color transparency (Flutter 3.27+ API). This replaces the deprecated `color.withOpacity()` method.
 
 ### Navigation Architecture
 Uses `go_router` with a `ShellRoute` pattern:
@@ -211,6 +214,50 @@ if (result != null && mounted) {
 }
 ```
 
+#### PopupMenuButton Pattern for Contextual Actions
+For contextual actions on list items (e.g., delete), use `PopupMenuButton` with three-dot icon instead of direct delete buttons:
+
+**Benefits**:
+- Less visually aggressive than red delete icons
+- Follows Material Design patterns
+- Allows for future action expansion
+- Provides confirmation dialogs for destructive actions
+
+**Example** (from `DatabaseSelectionDialog`):
+```dart
+trailing: isCurrent
+    ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+    : PopupMenuButton<String>(
+        icon: Icon(
+          Icons.more_vert,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        onSelected: (value) {
+          if (value == 'delete') {
+            _deleteDatabase(dbName);
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
+                const SizedBox(width: 12),
+                Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ],
+            ),
+          ),
+        ],
+      ),
+```
+
+**Notes**:
+- Use `Icons.more_vert` for menu icon with reduced opacity (0.6)
+- Destructive actions (delete) should use `Theme.of(context).colorScheme.error` color
+- Always show confirmation dialog for destructive actions
+- Icon size in menu items should be 20 (slightly smaller than default 24)
+
 ### Services
 - **AIService**: OpenAI integration for AI-assisted writing, stores API key in SharedPreferences
 - **PdfService**: PDF generation and export using the `pdf` package
@@ -222,14 +269,147 @@ if (result != null && mounted) {
 ### Multiple Database Support
 - Users can create and switch between multiple book projects (`.db` files)
 - Each database is a separate book with its own chapters, characters, plots, and notes
-- `DatabaseManager` handles file listing and switching
+- `DatabaseManager` handles file listing, switching, creation, and deletion
 - Current database path stored in `SharedPreferences`
+- Database deletion includes safety check: cannot delete currently active database
+- Delete UI uses `PopupMenuButton` pattern with confirmation dialog (see Dialog Patterns section)
 
 ### AI Integration
 - OpenAI API integration for AI-assisted writing
 - Context-aware prompts include all book data (chapters, characters, plots, notes)
 - Used in edit dialogs to improve or generate content
 - API key stored in `SharedPreferences`, managed via settings dialog
+- AI Context Prompt: Optional user-defined context stored in manifest (e.g., genre, style, themes)
+  - Added to settings dialog as multi-line text field
+  - Stored in manifest table with key `ContextPrompt`
+  - Automatically inserted into AI system messages when present
+  - No database version bump required - gracefully handles missing values with empty string default
+
+#### AI Edit Dialog Integration
+Edit dialogs (chapters, characters, plots, misc notes) integrate AI features when API key is configured:
+
+- **Inline AI prompt field**: TextField with send button appears below content field
+- **Command mode checkbox**: Present only in Plot and Misc Note dialogs (removed from Chapter and Character)
+  - When enabled, AI can create new chapters, characters, plots, and notes using JSON commands
+  - When disabled, AI inserts/replaces text at cursor position or selection
+- **Loading state**: Content field becomes `readOnly` during AI processing (not `enabled: false`)
+- **Cursor/selection preservation**: Uses `TextSelectionHighlight` overlay to maintain visual cursor/selection even when focus moves to AI prompt field
+
+#### TextSelectionHighlight Overlay Pattern
+Critical pattern for maintaining cursor/selection visibility when TextField loses focus (e.g., when clicking AI prompt field):
+
+**Problem**: Flutter TextFields only show cursor when focused. When user clicks in AI prompt field, content field loses focus and cursor disappears, making it hard to see where AI will insert text.
+
+**Solution**: Custom overlay widget (`lib/widgets/text_selection_overlay.dart`) that:
+- Uses `CustomPaint` with `TextPainter` to render cursor and selection boxes
+- Positioned over the TextField using `Stack` and `Positioned.fill`
+- Only visible when field is unfocused (`!_contentFocusNode.hasFocus`)
+- Uses `IgnorePointer` to prevent blocking touch events
+
+**Implementation pattern** (from edit dialogs):
+```dart
+class _EditDialogState extends State<EditDialog> {
+  late final TextEditingController _contentController;
+  late final FocusNode _contentFocusNode;
+  late final ScrollController _contentScrollController;
+  TextSelection? _savedSelection;
+  double _scrollOffset = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = TextEditingController(text: initialContent);
+    _contentFocusNode = FocusNode();
+    _contentScrollController = ScrollController();
+
+    // Listen to focus changes to save/restore selection
+    _contentFocusNode.addListener(_onContentFocusChange);
+
+    // Listen to scroll changes to update overlay position
+    _contentScrollController.addListener(_onContentScrollChange);
+
+    // Listen to selection changes to update overlay when unfocused
+    _contentController.addListener(_onContentSelectionChange);
+  }
+
+  void _onContentFocusChange() {
+    setState(() {
+      if (_contentFocusNode.hasFocus) {
+        // Restore selection when gaining focus
+        if (_savedSelection != null) {
+          _contentController.selection = _savedSelection!;
+        }
+      } else {
+        // Save selection when losing focus
+        _savedSelection = _contentController.selection;
+      }
+    });
+  }
+
+  void _onContentScrollChange() {
+    setState(() {
+      _scrollOffset = _contentScrollController.offset;
+    });
+  }
+
+  void _onContentSelectionChange() {
+    // Update saved selection when selection changes while unfocused
+    if (!_contentFocusNode.hasFocus) {
+      setState(() {
+        _savedSelection = _contentController.selection;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        TextFormField(
+          controller: _contentController,
+          focusNode: _contentFocusNode,
+          scrollController: _contentScrollController,
+          readOnly: _isLoadingAi, // Use readOnly, not enabled
+          showCursor: true,
+          // ... other properties
+        ),
+        // Overlay only visible when unfocused
+        if (!_contentFocusNode.hasFocus && _savedSelection != null)
+          Positioned.fill(
+            child: ClipRect(
+              child: IgnorePointer(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 19, 12, 20),
+                  child: TextSelectionHighlight(
+                    text: _contentController.text,
+                    selection: _savedSelection!,
+                    style: Theme.of(context).textTheme.bodyLarge ??
+                           const TextStyle(fontSize: 16.0),
+                    maxLines: 10,
+                    scrollOffset: _scrollOffset,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+```
+
+**CRITICAL: When AI inserts text**, update `_savedSelection` BEFORE calling `requestFocus()` to prevent focus listener from overwriting new selection:
+```dart
+final newSelection = TextSelection(
+  baseOffset: selection.start,
+  extentOffset: selection.start + response.text!.length,
+);
+_contentController.selection = newSelection;
+_savedSelection = newSelection; // MUST happen before requestFocus
+_contentFocusNode.requestFocus();
+```
+
+**Padding values**: The overlay padding (16, 19, 12, 20) has been reverse-engineered to exactly match TextFormField's internal padding. Do not change these values without testing alignment carefully.
 
 ### PDF Export
 - Export entire book to PDF with custom fonts and formatting
