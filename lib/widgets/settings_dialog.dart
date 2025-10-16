@@ -88,14 +88,40 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ),
               ),
               const DSSpacing.spacing16(),
-              TextFormField(
-                controller: _apiKeyController,
-                decoration: const InputDecoration(
-                  labelText: 'OpenAI API Key',
-                  border: OutlineInputBorder(),
-                  hintText: 'sk-...',
-                ),
-                obscureText: true,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _apiKeyController,
+                      decoration: const InputDecoration(
+                        labelText: 'OpenAI API Key',
+                        border: OutlineInputBorder(),
+                        hintText: 'sk-...',
+                      ),
+                      obscureText: true,
+                    ),
+                  ),
+                  SizedBox(width: AppTheme.spacing8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: IconButton(
+                      icon: const Icon(Icons.open_in_new),
+                      onPressed: () async {
+                        final uri = Uri.parse(
+                          'https://platform.openai.com/api-keys',
+                        );
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      tooltip: 'Get API Key',
+                    ),
+                  ),
+                ],
               ),
               const DSSpacing.spacing16(),
               TextFormField(
