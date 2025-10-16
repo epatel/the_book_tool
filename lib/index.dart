@@ -9,6 +9,7 @@ export 'package:shared_preferences/shared_preferences.dart';
 export 'package:window_manager/window_manager.dart';
 export 'package:openai_dart/openai_dart.dart' hide Image, Batch;
 export 'package:google_fonts/google_fonts.dart';
+export 'package:url_launcher/url_launcher.dart';
 
 // Design System
 export 'design_system/theme.dart';

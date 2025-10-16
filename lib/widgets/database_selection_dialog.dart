@@ -196,6 +196,35 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
     }
   }
 
+  Future<void> _openDatabaseFolder() async {
+    try {
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      final uri = Uri.file(documentsDirectory.path);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: DSText.bodyMedium('Could not open folder'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: DSText.bodyMedium('Error opening folder: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -310,6 +339,11 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
             DSButton.text(
               label: 'Create New',
               onPressed: _isLoading ? null : _createNewDatabase,
+            ),
+            SizedBox(width: AppTheme.spacing8),
+            DSButton.text(
+              label: 'Open Folder',
+              onPressed: _isLoading ? null : _openDatabaseFolder,
             ),
             const Spacer(),
             DSButton.primary(

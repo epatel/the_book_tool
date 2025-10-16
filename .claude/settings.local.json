@@ -7,7 +7,8 @@
       "mcp__dart__run_tests",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.flutter.dev)",
-      "mcp__dart__dart_format"
+      "mcp__dart__dart_format",
+      "Bash(flutter pub:*)"
     ],
     "deny": [],
     "ask": []
