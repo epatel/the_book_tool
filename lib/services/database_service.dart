@@ -59,6 +59,9 @@ class DatabaseService {
         )
       ''');
       debugPrint('Created prompts table with all columns');
+
+      // Populate default prompts
+      await _insertDefaultPrompts(db);
     } else {
       // Table exists, check what columns it has
       final tableInfo = await db.rawQuery('PRAGMA table_info(prompts)');
@@ -188,6 +191,79 @@ class DatabaseService {
         updated_at INTEGER NOT NULL
       )
     ''');
+
+    // Populate default prompts
+    await _insertDefaultPrompts(db);
+  }
+
+  static Future<void> _insertDefaultPrompts(Database db) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final defaultPrompts = [
+      {
+        'title': 'Expand Scene',
+        'content':
+            'Expand the selected text into a more detailed scene. Add sensory details, character emotions, and vivid descriptions while maintaining the original intent and tone.',
+        'command': 0,
+        'is_template': 1,
+        'order_index': 0,
+      },
+      {
+        'title': 'Add Dialogue',
+        'content':
+            'Add natural dialogue to the selected scene. The dialogue should reveal character personalities, advance the plot, and feel authentic to each character\'s voice.',
+        'command': 0,
+        'is_template': 1,
+        'order_index': 1,
+      },
+      {
+        'title': 'Describe Setting',
+        'content':
+            'Provide a rich, immersive description of the setting. Include visual details, atmosphere, sounds, smells, and how the environment affects the mood of the scene.',
+        'command': 0,
+        'is_template': 1,
+        'order_index': 2,
+      },
+      {
+        'title': 'Continue Writing',
+        'content':
+            'Continue writing from where the text ends. Maintain the established tone, style, and pacing. Keep the narrative flowing naturally.',
+        'command': 0,
+        'is_template': 1,
+        'order_index': 3,
+      },
+      {
+        'title': 'Show Don\'t Tell',
+        'content':
+            'Rewrite the selected text using "show don\'t tell" technique. Replace exposition with action, dialogue, and sensory details that demonstrate rather than state.',
+        'command': 0,
+        'is_template': 1,
+        'order_index': 4,
+      },
+      {
+        'title': 'Generate Chapter Outline',
+        'content':
+            'Based on the book context, create an outline for {chapter}. Generate 3-5 key scenes that advance the plot and develop the characters. Use command mode to create these as separate notes.',
+        'command': 1,
+        'is_template': 1,
+        'order_index': 5,
+      },
+    ];
+
+    for (final prompt in defaultPrompts) {
+      await db.insert('prompts', {
+        'title': prompt['title'],
+        'content': prompt['content'],
+        'response': null,
+        'command': prompt['command'],
+        'is_template': prompt['is_template'],
+        'order_index': prompt['order_index'],
+        'created_at': now,
+        'updated_at': now,
+      });
+    }
+
+    debugPrint('Inserted ${defaultPrompts.length} default prompts');
   }
 
   static Future<void> _onUpgrade(

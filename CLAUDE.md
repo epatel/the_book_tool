@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The Book Tool is a Flutter application for book writing, helping authors organize chapters, characters, plot ideas, and miscellaneous notes. The app uses a stationary navigation panel layout (not a drawer) with four main sections.
+The Book Tool is a Flutter application for book writing, helping authors organize chapters, characters, plot ideas, miscellaneous notes, and AI prompts. The app uses a stationary navigation panel layout (not a drawer) with five main sections: Chapters, Characters, Plots, Notes, and Prompts.
 
 ## Development Commands
 
@@ -100,7 +100,7 @@ When adding new pages:
 4. Export the page in `index.dart`
 
 ### Adding New Entity Types
-The app has a consistent pattern for entity types (chapters, characters, plots, misc_notes). To add a new entity type:
+The app has a consistent pattern for entity types (chapters, characters, plots, misc_notes, prompts). To add a new entity type:
 
 1. **Model** (`lib/models/`): Create model class with:
    - Properties: `id?`, entity-specific fields, `orderIndex`, `createdAt`, `updatedAt`
@@ -173,8 +173,9 @@ The app uses a three-layer architecture:
 1. **Database Layer** (`lib/services/`):
    - `DatabaseService`: SQLite database initialization and schema management using `sqflite_common_ffi`
    - `DatabaseManager`: Handles multiple database files, database switching, and file management
-   - Tables: `manifest`, `chapters`, `characters`, `plots`, `misc_notes`
+   - Tables: `manifest`, `chapters`, `characters`, `plots`, `misc_notes`, `prompts`
    - Each entity has: `id`, timestamps (`created_at`, `updated_at`), and `order_index` for manual ordering
+   - Boolean fields stored as INTEGER (0/1) in SQLite
 
 2. **Repository Layer** (`lib/repositories/`):
    - Pure data access logic (no business logic)
@@ -189,6 +190,8 @@ The app uses a three-layer architecture:
    - Exposes data and loading state to UI
 
 Models use `fromMap()` and `toMap()` for serialization, plus `copyWith()` for immutable updates.
+
+**Database Migration Pattern**: When adding new columns or renaming columns, use `PRAGMA table_info` to check existing schema and perform graceful migration without version bumps. See `prompts` table migration in `DatabaseService._onOpen()` for reference.
 
 ### Dialog Patterns
 Dialogs follow a consistent pattern across the app:
@@ -261,8 +264,10 @@ trailing: isCurrent
 ### Services
 - **AIService**: OpenAI integration for AI-assisted writing, stores API key in SharedPreferences
 - **PdfService**: PDF generation and export using the `pdf` package
-- **BookDataService**: Aggregates all book data (chapters, characters, plots, misc notes) for context
+- **BookDataService**: Aggregates all book data (chapters, characters, plots, misc notes) for AI context
 - **WindowPreferencesService**: Saves/restores window position and size using `window_manager` and `shared_preferences`
+- **DatabaseService**: Core database operations with graceful schema migrations
+- **DatabaseManager**: Multi-database file management and switching
 
 ## Key Features
 
@@ -284,6 +289,42 @@ trailing: isCurrent
   - Stored in manifest table with key `ContextPrompt`
   - Automatically inserted into AI system messages when present
   - No database version bump required - gracefully handles missing values with empty string default
+
+#### Prompts System
+The prompts system allows users to save, organize, and reuse AI prompts:
+
+**Prompt Types**:
+1. **Regular prompts**: Saved prompts that can be sent to AI, responses are stored and can be viewed
+2. **Templates**: Prompts marked as templates appear in template popup menus across edit dialogs
+3. **Command mode prompts**: Templates that enable AI to execute commands (create entities)
+
+**Prompt Model** (`lib/models/prompt.dart`):
+- `title`: Prompt name
+- `content`: The actual prompt text
+- `response`: Optional saved AI response (only for non-template, non-command prompts)
+- `command`: Boolean flag indicating if prompt enables command mode
+- `isTemplate`: Boolean flag indicating if prompt appears in template menus
+- Standard fields: `id`, `orderIndex`, `createdAt`, `updatedAt`
+
+**Template Substitution**: Templates support placeholder substitution when inserted:
+- `{title}` or `{name}`: Replaced with item's title/name (interchangeable)
+- `{chapter}`: Replaced with chapter designation (chapters only):
+  - If first chapter (orderIndex 0) has title "Prologue" → `"Prologue"`
+  - Otherwise adjusts chapter numbering based on prologue presence:
+    - With prologue: `"Chapter 1: <title>"` for orderIndex 1
+    - Without prologue: `"Chapter 1: <title>"` for orderIndex 0
+
+**Template Availability**:
+- Prompts are loaded in `AppShell.initState()` to be available app-wide
+- Templates appear in `PopupMenuButton` with bookmark icon in edit dialogs
+- Command templates filtered out in chapters and characters (no command mode support)
+- All templates available in plots and misc notes (support command mode)
+
+**Response Storage**:
+- When sending non-template, non-command prompts, AI responses are saved to `response` field
+- "View Response" button appears in edit dialog when response exists
+- Response cleared if prompt content is modified
+- Responses displayed as markdown in `AIResponseDialog`
 
 #### AI Edit Dialog Integration
 Edit dialogs (chapters, characters, plots, misc notes) integrate AI features when API key is configured:
@@ -426,8 +467,15 @@ _contentFocusNode.requestFocus();
 ### Reading Experience
 - Custom fonts for chapter content (Roboto, Merriweather, OpenSans, SourceSerif4, Lora)
 - Adjustable font size
-- Optional markdown rendering for chapters
+- Optional markdown rendering for chapters using `flutter_markdown` package
 - Settings stored in database manifest table
+
+### Markdown Support
+The app uses `flutter_markdown` package for rendering markdown content:
+- AI responses displayed as markdown in `AIResponseDialog`
+- Uses `MarkdownBody` with `selectable: true` for copyable text
+- Custom `MarkdownStyleSheet` integrates with theme colors
+- Markdown can be enabled for chapter content via settings
 
 ## Key Files
 - `lib/main.dart`: Entry point, initializes database and window manager, sets up providers
