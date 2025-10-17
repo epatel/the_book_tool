@@ -8,32 +8,42 @@ class CharactersPage extends StatefulWidget {
 }
 
 class _CharactersPageState extends State<CharactersPage> {
+  final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
   bool _expandedAll = false;
   String _apiKey = '';
+  bool _markdownEnabled = false;
+  ReadingFont _readingFont = ReadingFont.lora;
+  double _fontSize = 14.0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CharacterProvider>(context, listen: false).loadCharacters();
-      _loadApiKey();
+      _loadSettings();
     });
   }
 
-  Future<void> _loadApiKey() async {
+  Future<void> _loadSettings() async {
+    final manifest = await _manifestRepository.getAllAsMap();
     final apiKey = await _aiService.getApiKey();
     if (mounted) {
       setState(() {
+        _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
         _apiKey = apiKey ?? '';
+        _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
+        _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
+        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
       });
     }
   }
 
-  void _toggleExpandAll() {
+  Future<void> _toggleExpandAll() async {
     setState(() {
       _expandedAll = !_expandedAll;
     });
+    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _showAddCharacterDialog() async {
@@ -157,15 +167,30 @@ class _CharactersPageState extends State<CharactersPage> {
                               children: [
                                 DSText.titleMedium(character.name),
                                 const DSSpacing.spacing8(),
-                                DSText.bodyMedium(
-                                  character.description,
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
+                                if (_markdownEnabled)
+                                  MarkdownBody(
+                                    data: character.description,
+                                    styleSheet: MarkdownStyleSheet(
+                                      p: _readingFont.getTextStyle(
+                                        fontSize: _fontSize,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    character.description,
+                                    style: _readingFont.getTextStyle(
+                                      fontSize: _fontSize,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -219,15 +244,38 @@ class _CharactersPageState extends State<CharactersPage> {
                             children: [
                               DSText.titleMedium(character.name),
                               const DSSpacing.spacing8(),
-                              DSText.bodyMedium(
-                                character.description,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
+                              if (_markdownEnabled)
+                                SizedBox(
+                                  height: AppTheme.collapsedContentHeight,
+                                  child: SingleChildScrollView(
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    child: MarkdownBody(
+                                      data: character.description,
+                                      styleSheet: MarkdownStyleSheet(
+                                        p: _readingFont.getTextStyle(
+                                          fontSize: _fontSize,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                DSText.bodyMedium(
+                                  character.description,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: _readingFont.getTextStyle(
+                                    fontSize: _fontSize,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

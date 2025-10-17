@@ -8,32 +8,42 @@ class MiscPage extends StatefulWidget {
 }
 
 class _MiscPageState extends State<MiscPage> {
+  final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
   bool _expandedAll = false;
   String _apiKey = '';
+  bool _markdownEnabled = false;
+  ReadingFont _readingFont = ReadingFont.lora;
+  double _fontSize = 14.0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MiscNoteProvider>(context, listen: false).loadNotes();
-      _loadApiKey();
+      _loadSettings();
     });
   }
 
-  Future<void> _loadApiKey() async {
+  Future<void> _loadSettings() async {
+    final manifest = await _manifestRepository.getAllAsMap();
     final apiKey = await _aiService.getApiKey();
     if (mounted) {
       setState(() {
+        _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
         _apiKey = apiKey ?? '';
+        _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
+        _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
+        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
       });
     }
   }
 
-  void _toggleExpandAll() {
+  Future<void> _toggleExpandAll() async {
     setState(() {
       _expandedAll = !_expandedAll;
     });
+    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _showAddNoteDialog() async {
@@ -157,15 +167,30 @@ class _MiscPageState extends State<MiscPage> {
                               children: [
                                 DSText.titleMedium(note.title),
                                 const DSSpacing.spacing8(),
-                                DSText.bodyMedium(
-                                  note.content,
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
+                                if (_markdownEnabled)
+                                  MarkdownBody(
+                                    data: note.content,
+                                    styleSheet: MarkdownStyleSheet(
+                                      p: _readingFont.getTextStyle(
+                                        fontSize: _fontSize,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    note.content,
+                                    style: _readingFont.getTextStyle(
+                                      fontSize: _fontSize,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -217,15 +242,38 @@ class _MiscPageState extends State<MiscPage> {
                             children: [
                               DSText.titleMedium(note.title),
                               const DSSpacing.spacing8(),
-                              DSText.bodyMedium(
-                                note.content,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
+                              if (_markdownEnabled)
+                                SizedBox(
+                                  height: AppTheme.collapsedContentHeight,
+                                  child: SingleChildScrollView(
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    child: MarkdownBody(
+                                      data: note.content,
+                                      styleSheet: MarkdownStyleSheet(
+                                        p: _readingFont.getTextStyle(
+                                          fontSize: _fontSize,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                DSText.bodyMedium(
+                                  note.content,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: _readingFont.getTextStyle(
+                                    fontSize: _fontSize,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

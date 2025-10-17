@@ -38,6 +38,7 @@ class _BookPageState extends State<BookPage> {
         _apiKey = apiKey ?? '';
         _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
         _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
+        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
       });
     }
   }
@@ -52,10 +53,11 @@ class _BookPageState extends State<BookPage> {
     }
   }
 
-  void _toggleExpandAll() {
+  Future<void> _toggleExpandAll() async {
     setState(() {
       _expandedAll = !_expandedAll;
     });
+    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _showAddChapterDialog() async {

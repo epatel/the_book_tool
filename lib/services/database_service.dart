@@ -109,6 +109,44 @@ class DatabaseService {
       }
       // If has both command and response, no migration needed
     }
+
+    // Gracefully add new manifest keys if they don't exist
+    await _ensureManifestKeys(db);
+  }
+
+  static Future<void> _ensureManifestKeys(Database db) async {
+    final manifestKeys = await db.query('manifest');
+    final existingKeys = manifestKeys.map((row) => row['key'] as String).toSet();
+
+    // Add LastSection if it doesn't exist
+    if (!existingKeys.contains('LastSection')) {
+      await db.insert('manifest', {'key': 'LastSection', 'value': '/book'});
+      debugPrint('Added LastSection to manifest');
+    }
+
+    // Add ExpandedAll if it doesn't exist
+    if (!existingKeys.contains('ExpandedAll')) {
+      await db.insert('manifest', {'key': 'ExpandedAll', 'value': 'false'});
+      debugPrint('Added ExpandedAll to manifest');
+    }
+
+    // Add ContextPrompt if it doesn't exist
+    if (!existingKeys.contains('ContextPrompt')) {
+      await db.insert('manifest', {'key': 'ContextPrompt', 'value': ''});
+      debugPrint('Added ContextPrompt to manifest');
+    }
+
+    // Add ReadingFont if it doesn't exist
+    if (!existingKeys.contains('ReadingFont')) {
+      await db.insert('manifest', {'key': 'ReadingFont', 'value': 'lora'});
+      debugPrint('Added ReadingFont to manifest');
+    }
+
+    // Add FontSize if it doesn't exist
+    if (!existingKeys.contains('FontSize')) {
+      await db.insert('manifest', {'key': 'FontSize', 'value': '14.0'});
+      debugPrint('Added FontSize to manifest');
+    }
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -127,7 +165,12 @@ class DatabaseService {
       'key': 'Version',
       'value': version.toString(),
     });
-    await db.insert('manifest', {'key': 'Markdown', 'value': 'false'});
+    await db.insert('manifest', {'key': 'Markdown', 'value': 'true'});
+    await db.insert('manifest', {'key': 'ContextPrompt', 'value': ''});
+    await db.insert('manifest', {'key': 'ReadingFont', 'value': 'lora'});
+    await db.insert('manifest', {'key': 'FontSize', 'value': '14.0'});
+    await db.insert('manifest', {'key': 'LastSection', 'value': '/misc'});
+    await db.insert('manifest', {'key': 'ExpandedAll', 'value': 'true'});
 
     // Create chapters table
     await db.execute('''
@@ -194,6 +237,9 @@ class DatabaseService {
 
     // Populate default prompts
     await _insertDefaultPrompts(db);
+
+    // Populate welcome note
+    await _insertWelcomeNote(db);
   }
 
   static Future<void> insertDefaultPrompts() async {
@@ -269,6 +315,61 @@ class DatabaseService {
     }
 
     debugPrint('Inserted ${defaultPrompts.length} default prompts');
+  }
+
+  static Future<void> _insertWelcomeNote(Database db) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final welcomeContent = '''Welcome to The Book Tool!
+
+This application is designed to help you write and organize your book. Here's a quick guide to get you started:
+
+## Chapters
+Write and organize your book chapters. You can:
+- Reorder chapters by dragging them
+- Expand all chapters to see full content
+- Use text-to-speech to listen to your chapters (configure in Settings)
+
+## Characters
+Keep track of your characters and their descriptions. This helps maintain consistency throughout your book.
+
+## Plots
+Organize plot points, story arcs, and narrative threads. Use this section to plan and track your story's structure.
+
+## Notes
+This section! Use notes for general ideas, research, world-building details, or anything else that doesn't fit in the other categories.
+
+## Prompts
+AI-powered writing prompts to help you:
+- Expand scenes with more detail
+- Add dialogue and character interactions
+- Describe settings vividly
+- Continue writing when you're stuck
+- Use command mode prompts to generate structured content
+
+## Settings
+Configure your book's title, author name, AI API key, theme, reading preferences, and text-to-speech voice.
+
+## Library
+Create and switch between multiple book projects using the Library icon (storage icon) in the sidebar.
+
+## Tips
+- All your data is stored locally on your computer
+- Use markdown formatting for rich text (enable in Settings)
+- Select text in chapters and use AI prompts for assistance
+- Export your finished book to PDF
+
+Happy writing!''';
+
+    await db.insert('misc_notes', {
+      'title': 'Getting Started',
+      'content': welcomeContent,
+      'order_index': 0,
+      'created_at': now,
+      'updated_at': now,
+    });
+
+    debugPrint('Inserted welcome note');
   }
 
   static Future<void> _onUpgrade(

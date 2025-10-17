@@ -8,6 +8,7 @@ class PromptsPage extends StatefulWidget {
 }
 
 class _PromptsPageState extends State<PromptsPage> {
+  final ManifestRepository _manifestRepository = ManifestRepository();
   bool _expandedAll = false;
 
   @override
@@ -15,13 +16,24 @@ class _PromptsPageState extends State<PromptsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PromptProvider>(context, listen: false).loadPrompts();
+      _loadSettings();
     });
   }
 
-  void _toggleExpandAll() {
+  Future<void> _loadSettings() async {
+    final manifest = await _manifestRepository.getAllAsMap();
+    if (mounted) {
+      setState(() {
+        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
+      });
+    }
+  }
+
+  Future<void> _toggleExpandAll() async {
     setState(() {
       _expandedAll = !_expandedAll;
     });
+    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _sendPromptToAI(Prompt prompt) async {

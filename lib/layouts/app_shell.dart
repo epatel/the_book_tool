@@ -58,7 +58,30 @@ class _AppShellState extends State<AppShell> {
       ).loadPrompts();
 
       _loadSettings();
+      _restoreLastSection();
     });
+  }
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Save current path whenever it changes
+    if (oldWidget.currentPath != widget.currentPath) {
+      _saveCurrentSection();
+    }
+  }
+
+  Future<void> _restoreLastSection() async {
+    final manifest = await _manifestRepository.getAllAsMap();
+    final lastSection = manifest['LastSection'] ?? '/book';
+
+    if (mounted && lastSection != widget.currentPath) {
+      context.go(lastSection);
+    }
+  }
+
+  Future<void> _saveCurrentSection() async {
+    await _manifestRepository.set('LastSection', widget.currentPath);
   }
 
   Future<void> _loadSettings() async {
@@ -138,6 +161,13 @@ class _AppShellState extends State<AppShell> {
         // Trigger update of counts
         _onDataChanged();
         await _loadSettings();
+
+        // Navigate to the last section saved in the newly opened database
+        final manifest = await _manifestRepository.getAllAsMap();
+        final lastSection = manifest['LastSection'] ?? '/book';
+        if (mounted && lastSection != widget.currentPath) {
+          context.go(lastSection);
+        }
       }
     }
   }
