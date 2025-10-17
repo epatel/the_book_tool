@@ -24,6 +24,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CharacterProvider()),
         ChangeNotifierProvider(create: (_) => PlotProvider()),
         ChangeNotifierProvider(create: (_) => MiscNoteProvider()),
+        ChangeNotifierProvider(create: (_) => PromptProvider()),
       ],
       child: const App(),
     ),

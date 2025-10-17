@@ -29,8 +29,83 @@ class DatabaseService {
         version: _databaseVersion,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
+        onOpen: _onOpen,
       ),
     );
+  }
+
+  static Future<void> _onOpen(Database db) async {
+    // Check if prompts table exists and create it if it doesn't
+    // This allows graceful migration for existing version 1 databases
+    final tables = await db.query(
+      'sqlite_master',
+      where: 'type = ? AND name = ?',
+      whereArgs: ['table', 'prompts'],
+    );
+
+    if (tables.isEmpty) {
+      // No table exists, create with all columns
+      await db.execute('''
+        CREATE TABLE prompts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          response TEXT,
+          command INTEGER NOT NULL DEFAULT 0,
+          is_template INTEGER NOT NULL DEFAULT 0,
+          order_index INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
+      debugPrint('Created prompts table with all columns');
+    } else {
+      // Table exists, check what columns it has
+      final tableInfo = await db.rawQuery('PRAGMA table_info(prompts)');
+      final columnNames = tableInfo.map((col) => col['name'] as String).toSet();
+
+      final hasCreationsColumn = columnNames.contains('creations');
+      final hasCommandColumn = columnNames.contains('command');
+      final hasResponseColumn = columnNames.contains('response');
+
+      if (hasCreationsColumn && !hasCommandColumn) {
+        // Old schema: migrate "creations" to "command" and add "response"
+        debugPrint('Migrating prompts table: creations -> command, adding response');
+
+        await db.execute('''
+          CREATE TABLE prompts_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            response TEXT,
+            command INTEGER NOT NULL DEFAULT 0,
+            is_template INTEGER NOT NULL DEFAULT 0,
+            order_index INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          )
+        ''');
+
+        // Copy data, mapping creations -> command
+        await db.execute('''
+          INSERT INTO prompts_new
+            (id, title, content, response, command, is_template, order_index, created_at, updated_at)
+          SELECT
+            id, title, content, NULL, creations, is_template, order_index, created_at, updated_at
+          FROM prompts
+        ''');
+
+        await db.execute('DROP TABLE prompts');
+        await db.execute('ALTER TABLE prompts_new RENAME TO prompts');
+
+        debugPrint('Prompts table migration completed');
+      } else if (hasCommandColumn && !hasResponseColumn) {
+        // Has command but missing response column
+        await db.execute('ALTER TABLE prompts ADD COLUMN response TEXT');
+        debugPrint('Added response column to prompts table');
+      }
+      // If has both command and response, no migration needed
+    }
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -98,6 +173,21 @@ class DatabaseService {
         updated_at INTEGER NOT NULL
       )
     ''');
+
+    // Create prompts table
+    await db.execute('''
+      CREATE TABLE prompts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        response TEXT,
+        command INTEGER NOT NULL DEFAULT 0,
+        is_template INTEGER NOT NULL DEFAULT 0,
+        order_index INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
   }
 
   static Future<void> _onUpgrade(
@@ -147,6 +237,15 @@ class DatabaseService {
     // Select COUNT(*) from misc_notes
     final count = await db
         .query('misc_notes', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
+
+  static Future<int> numberOfPrompts() async {
+    final db = await database;
+    // Select COUNT(*) from prompts
+    final count = await db
+        .query('prompts', columns: ['COUNT(*)'])
         .then((value) => value.first['COUNT(*)']);
     return count as int;
   }

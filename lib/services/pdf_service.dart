@@ -446,27 +446,32 @@ class PdfService {
       pw.Page(
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
-          return pw.Center(
-            child: pw.Column(
-              mainAxisAlignment: pw.MainAxisAlignment.center,
-              children: [
-                pw.Text(
-                  bookName,
-                  style: pw.TextStyle(
-                    fontSize: 32,
-                    font: pdfBoldFont,
-                  ),
+          // Position title at 1/3 of the page height
+          final pageHeight = PdfPageFormat.a4.height;
+          final topOffset = pageHeight / 3;
+
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              pw.SizedBox(height: topOffset),
+              pw.Text(
+                bookName,
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  fontSize: 32,
+                  font: pdfBoldFont,
                 ),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  'by $author',
-                  style: pw.TextStyle(
-                    fontSize: 18,
-                    font: pdfRegularFont,
-                  ),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'by $author',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  font: pdfRegularFont,
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

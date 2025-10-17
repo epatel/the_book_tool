@@ -31,6 +31,7 @@ export 'models/chapter.dart';
 export 'models/character.dart';
 export 'models/plot.dart';
 export 'models/misc_note.dart';
+export 'models/prompt.dart';
 export 'models/ai_command.dart';
 
 // Services
@@ -48,6 +49,7 @@ export 'repositories/chapter_repository.dart';
 export 'repositories/character_repository.dart';
 export 'repositories/plot_repository.dart';
 export 'repositories/misc_note_repository.dart';
+export 'repositories/prompt_repository.dart';
 
 // Providers
 export 'providers/theme_provider.dart';
@@ -55,19 +57,23 @@ export 'providers/chapter_provider.dart';
 export 'providers/character_provider.dart';
 export 'providers/plot_provider.dart';
 export 'providers/misc_note_provider.dart';
+export 'providers/prompt_provider.dart';
 
 // Widgets
 export 'widgets/add_chapter_dialog.dart';
 export 'widgets/add_character_dialog.dart';
 export 'widgets/add_plot_dialog.dart';
 export 'widgets/add_misc_note_dialog.dart';
+export 'widgets/add_prompt_dialog.dart';
 export 'widgets/edit_chapter_dialog.dart';
 export 'widgets/edit_character_dialog.dart';
 export 'widgets/edit_plot_dialog.dart';
 export 'widgets/edit_misc_note_dialog.dart';
+export 'widgets/edit_prompt_dialog.dart';
 export 'widgets/settings_dialog.dart';
 export 'widgets/database_selection_dialog.dart';
 export 'widgets/text_selection_overlay.dart';
+export 'widgets/ai_response_dialog.dart';
 
 // Local files
 export 'app.dart';
@@ -77,3 +83,4 @@ export 'pages/book_page.dart';
 export 'pages/characters_page.dart';
 export 'pages/plots_page.dart';
 export 'pages/misc_page.dart';
+export 'pages/prompts_page.dart';

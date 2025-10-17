@@ -30,6 +30,11 @@ final router = GoRouter(
           pageBuilder: (context, state) =>
               NoTransitionPage(key: state.pageKey, child: const MiscPage()),
         ),
+        GoRoute(
+          path: '/prompts',
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const PromptsPage()),
+        ),
       ],
     ),
   ],
