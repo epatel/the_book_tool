@@ -16,6 +16,7 @@ class _BookPageState extends State<BookPage> {
   String _apiKey = '';
   ReadingFont _readingFont = ReadingFont.lora;
   double _fontSize = 14.0;
+  bool _hasTtsVoice = false;
 
   @override
   void initState() {
@@ -23,6 +24,7 @@ class _BookPageState extends State<BookPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ChapterProvider>(context, listen: false).loadChapters();
       _loadSettings();
+      _checkTtsAvailability();
     });
   }
 
@@ -36,6 +38,16 @@ class _BookPageState extends State<BookPage> {
         _apiKey = apiKey ?? '';
         _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
         _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
+      });
+    }
+  }
+
+  Future<void> _checkTtsAvailability() async {
+    final ttsProvider = Provider.of<TtsProvider>(context, listen: false);
+    final hasVoice = await ttsProvider.hasVoiceConfigured();
+    if (mounted) {
+      setState(() {
+        _hasTtsVoice = hasVoice;
       });
     }
   }
@@ -61,6 +73,14 @@ class _BookPageState extends State<BookPage> {
   }
 
   Future<void> _showEditChapterDialog(Chapter chapter) async {
+    // Stop TTS if playing
+    final ttsProvider = Provider.of<TtsProvider>(context, listen: false);
+    if (ttsProvider.isPlaying) {
+      await ttsProvider.stop();
+    }
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => EditChapterDialog(
@@ -86,6 +106,16 @@ class _BookPageState extends State<BookPage> {
         ).updateChapter(updatedChapter);
       }
     }
+  }
+
+  void _playChapter(Chapter chapter, int index, List<Chapter> allChapters) {
+    final ttsProvider = Provider.of<TtsProvider>(context, listen: false);
+    ttsProvider.playChapter(
+      chapter,
+      index,
+      allChapters,
+      markdownEnabled: _markdownEnabled,
+    );
   }
 
   String _getChapterLabel(List<Chapter> chapters, int index) {
@@ -116,6 +146,34 @@ class _BookPageState extends State<BookPage> {
             DSAppBar(
               title: _bookName,
               actions: [
+                Consumer<TtsProvider>(
+                  builder: (context, ttsProvider, child) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (ttsProvider.isPlaying)
+                          IconButton(
+                            icon: Icon(
+                              ttsProvider.isPaused
+                                  ? Icons.play_arrow
+                                  : Icons.pause,
+                            ),
+                            tooltip:
+                                ttsProvider.isPaused ? 'Resume' : 'Pause',
+                            onPressed: ttsProvider.isPaused
+                                ? ttsProvider.resume
+                                : ttsProvider.pause,
+                          ),
+                        if (ttsProvider.isPlaying)
+                          IconButton(
+                            icon: const Icon(Icons.stop),
+                            tooltip: 'Stop',
+                            onPressed: ttsProvider.stop,
+                          ),
+                      ],
+                    );
+                  },
+                ),
                 IconButton(
                   icon: Icon(
                     _expandedAll ? Icons.unfold_less : Icons.unfold_more,
@@ -177,16 +235,37 @@ class _BookPageState extends State<BookPage> {
                           provider.chapters,
                           index,
                         );
-                        return Container(
-                          key: ValueKey(chapter.id),
-                          padding: const EdgeInsets.only(
-                            bottom: AppTheme.spacing12,
-                          ),
-                          child: DSCard(
-                            onTap: () => _showEditChapterDialog(chapter),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                        return Consumer<TtsProvider>(
+                          builder: (context, ttsProvider, child) {
+                            final isPlaying = ttsProvider.isPlaying &&
+                                ttsProvider.currentChapterIndex == index;
+                            return Container(
+                              key: ValueKey(chapter.id),
+                              padding: const EdgeInsets.only(
+                                bottom: AppTheme.spacing12,
+                              ),
+                              child: Container(
+                                decoration: isPlaying
+                                    ? BoxDecoration(
+                                        border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusMedium,
+                                        ),
+                                      )
+                                    : null,
+                                child: DSCard(
+                                  onTap: () => _showEditChapterDialog(chapter),
+                                  child: Stack(
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
                                 if (chapterLabel.isNotEmpty)
                                   Row(
                                     children: [
@@ -228,9 +307,32 @@ class _BookPageState extends State<BookPage> {
                                           .withValues(alpha: 0.7),
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
+                                        ],
+                                      ),
+                                      if (!ttsProvider.isPlaying && _hasTtsVoice)
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.play_circle_filled),
+                                            iconSize: 40,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            onPressed: () => _playChapter(
+                                              chapter,
+                                              index,
+                                              provider.chapters,
+                                            ),
+                                            tooltip: 'Play',
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );

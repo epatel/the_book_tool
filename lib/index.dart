@@ -10,6 +10,7 @@ export 'package:window_manager/window_manager.dart';
 export 'package:openai_dart/openai_dart.dart' hide Image, Batch;
 export 'package:google_fonts/google_fonts.dart';
 export 'package:url_launcher/url_launcher.dart';
+export 'package:flutter_tts/flutter_tts.dart';
 
 // Design System
 export 'design_system/theme.dart';
@@ -42,6 +43,7 @@ export 'services/book_data_service.dart';
 export 'services/ai_service.dart';
 export 'services/ai_command_executor.dart';
 export 'services/pdf_service.dart';
+export 'services/tts_service.dart';
 
 // Repositories
 export 'repositories/manifest_repository.dart';
@@ -58,6 +60,7 @@ export 'providers/character_provider.dart';
 export 'providers/plot_provider.dart';
 export 'providers/misc_note_provider.dart';
 export 'providers/prompt_provider.dart';
+export 'providers/tts_provider.dart';
 
 // Widgets
 export 'widgets/add_chapter_dialog.dart';

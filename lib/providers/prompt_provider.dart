@@ -74,4 +74,13 @@ class PromptProvider extends ChangeNotifier {
       debugPrint('Error reordering prompts: $e');
     }
   }
+
+  Future<void> restoreDefaults() async {
+    try {
+      await DatabaseService.insertDefaultPrompts();
+      await loadPrompts();
+    } catch (e) {
+      debugPrint('Error restoring default prompts: $e');
+    }
+  }
 }

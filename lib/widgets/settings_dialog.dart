@@ -9,6 +9,7 @@ class SettingsDialog extends StatefulWidget {
   final ThemeMode themeMode;
   final ReadingFont readingFont;
   final double fontSize;
+  final String? ttsVoiceId;
 
   const SettingsDialog({
     super.key,
@@ -20,6 +21,7 @@ class SettingsDialog extends StatefulWidget {
     required this.themeMode,
     required this.readingFont,
     this.fontSize = 14.0,
+    this.ttsVoiceId,
   });
 
   @override
@@ -36,6 +38,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late ThemeMode _themeMode;
   late ReadingFont _readingFont;
   late double _fontSize;
+  String? _ttsVoiceId;
+  String? _ttsVoiceLocale;
+  List<Map<String, String>> _availableVoices = [];
+  bool _loadingVoices = true;
+  final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
@@ -50,6 +57,44 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _themeMode = widget.themeMode;
     _readingFont = widget.readingFont;
     _fontSize = widget.fontSize;
+    _ttsVoiceId = widget.ttsVoiceId;
+
+    _loadVoices();
+  }
+
+  Future<void> _loadVoices() async {
+    try {
+      final voices = await _ttsService.getEnhancedVoices();
+      // Also load the saved locale
+      final savedLocale = await _ttsService.getVoiceLocale();
+      if (mounted) {
+        setState(() {
+          _availableVoices = voices;
+          _loadingVoices = false;
+          _ttsVoiceLocale = savedLocale;
+
+          // If no voice selected yet, select first available
+          if (_ttsVoiceId == null && voices.isNotEmpty) {
+            _ttsVoiceId = voices.first['name'];
+            _ttsVoiceLocale = voices.first['locale'];
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading voices: $e');
+      if (mounted) {
+        setState(() {
+          _loadingVoices = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _previewVoice() async {
+    if (_ttsVoiceId != null && _ttsVoiceLocale != null) {
+      await _ttsService.setVoiceId(_ttsVoiceId!, _ttsVoiceLocale!);
+      await _ttsService.speak('This is a preview of the selected voice.');
+    }
   }
 
   @override
@@ -251,6 +296,96 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   ),
                 ],
               ),
+              const DSSpacing.spacing16(),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const DSText.bodyMedium('TTS Voice'),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message:
+                              'Only enhanced and premium quality voices are available for text-to-speech',
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: _loadingVoices
+                        ? const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : _availableVoices.isEmpty
+                            ? DSText.bodySmall(
+                                'No enhanced/premium voices available',
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      initialValue: _ttsVoiceId,
+                                      decoration: const InputDecoration(
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      items: _availableVoices
+                                          .map(
+                                            (voice) => DropdownMenuItem(
+                                              value: voice['name'],
+                                              child: Text(
+                                                '${voice['name']} (${voice['locale']})',
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          // Find the matching voice to get its locale
+                                          final voice = _availableVoices.firstWhere(
+                                            (v) => v['name'] == value,
+                                          );
+                                          setState(() {
+                                            _ttsVoiceId = value;
+                                            _ttsVoiceLocale = voice['locale'];
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(width: AppTheme.spacing8),
+                                  IconButton(
+                                    icon: const Icon(Icons.play_arrow),
+                                    onPressed: _ttsVoiceId == null
+                                        ? null
+                                        : _previewVoice,
+                                    tooltip: 'Preview',
+                                  ),
+                                ],
+                              ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -273,6 +408,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 'themeMode': _themeMode,
                 'readingFont': _readingFont,
                 'fontSize': _fontSize,
+                'ttsVoiceId': _ttsVoiceId,
+                'ttsVoiceLocale': _ttsVoiceLocale,
               });
             }
           },

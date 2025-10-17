@@ -15,6 +15,7 @@ class _AppShellState extends State<AppShell> {
   int _updateCounter = 0;
   final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
+  final TtsService _ttsService = TtsService();
   bool _markdownEnabled = false;
   String _bookName = '';
   String _author = '';
@@ -22,6 +23,7 @@ class _AppShellState extends State<AppShell> {
   String _contextPrompt = '';
   ReadingFont _readingFont = ReadingFont.lora;
   double _fontSize = 14.0;
+  String? _ttsVoiceId;
 
   @override
   void initState() {
@@ -62,6 +64,7 @@ class _AppShellState extends State<AppShell> {
   Future<void> _loadSettings() async {
     final manifest = await _manifestRepository.getAllAsMap();
     final apiKey = await _aiService.getApiKey();
+    final ttsVoiceId = await _ttsService.getVoiceId();
     if (mounted) {
       setState(() {
         _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
@@ -71,6 +74,7 @@ class _AppShellState extends State<AppShell> {
         _contextPrompt = manifest['ContextPrompt'] ?? '';
         _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
         _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
+        _ttsVoiceId = ttsVoiceId;
       });
     }
   }
@@ -116,17 +120,25 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (result == true && mounted) {
+      // Stop TTS if playing
+      final ttsProvider = Provider.of<TtsProvider>(context, listen: false);
+      if (ttsProvider.isPlaying) {
+        await ttsProvider.stop();
+      }
+
       // Database was switched, reload all data from all providers
-      await Future.wait([
-        Provider.of<ChapterProvider>(context, listen: false).loadChapters(),
-        Provider.of<CharacterProvider>(context, listen: false).loadCharacters(),
-        Provider.of<PlotProvider>(context, listen: false).loadPlots(),
-        Provider.of<MiscNoteProvider>(context, listen: false).loadNotes(),
-        Provider.of<PromptProvider>(context, listen: false).loadPrompts(),
-      ]);
-      // Trigger update of counts
-      _onDataChanged();
-      await _loadSettings();
+      if (mounted) {
+        await Future.wait([
+          Provider.of<ChapterProvider>(context, listen: false).loadChapters(),
+          Provider.of<CharacterProvider>(context, listen: false).loadCharacters(),
+          Provider.of<PlotProvider>(context, listen: false).loadPlots(),
+          Provider.of<MiscNoteProvider>(context, listen: false).loadNotes(),
+          Provider.of<PromptProvider>(context, listen: false).loadPrompts(),
+        ]);
+        // Trigger update of counts
+        _onDataChanged();
+        await _loadSettings();
+      }
     }
   }
 
@@ -144,6 +156,7 @@ class _AppShellState extends State<AppShell> {
         themeMode: themeProvider.themeMode,
         readingFont: _readingFont,
         fontSize: _fontSize,
+        ttsVoiceId: _ttsVoiceId,
       ),
     );
 
@@ -158,6 +171,14 @@ class _AppShellState extends State<AppShell> {
       });
       await _aiService.setApiKey(result['apiKey'] as String);
       await themeProvider.setThemeMode(result['themeMode'] as ThemeMode);
+
+      // Save TTS voice if provided
+      final ttsVoiceId = result['ttsVoiceId'] as String?;
+      final ttsVoiceLocale = result['ttsVoiceLocale'] as String?;
+      if (ttsVoiceId != null && ttsVoiceLocale != null) {
+        await _ttsService.setVoiceId(ttsVoiceId, ttsVoiceLocale);
+      }
+
       await _loadSettings();
     }
   }

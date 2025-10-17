@@ -292,6 +292,16 @@ class _PromptsPageState extends State<PromptsPage> {
                               ).colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                           ),
+                          const DSSpacing.spacing24(),
+                          DSButton.primary(
+                            label: 'Restore Default Prompts',
+                            onPressed: () async {
+                              await Provider.of<PromptProvider>(
+                                context,
+                                listen: false,
+                              ).restoreDefaults();
+                            },
+                          ),
                         ],
                       ),
                     );

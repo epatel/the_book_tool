@@ -196,6 +196,11 @@ class DatabaseService {
     await _insertDefaultPrompts(db);
   }
 
+  static Future<void> insertDefaultPrompts() async {
+    final db = await database;
+    await _insertDefaultPrompts(db);
+  }
+
   static Future<void> _insertDefaultPrompts(Database db) async {
     final now = DateTime.now().millisecondsSinceEpoch;
 
