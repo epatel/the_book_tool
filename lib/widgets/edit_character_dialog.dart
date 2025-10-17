@@ -361,7 +361,9 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: _aiPromptController.text.isEmpty
+                            onPressed: _aiPromptController.text.isEmpty ||
+                                    (_savedSelection == null ||
+                                        !_savedSelection!.isValid)
                                 ? null
                                 : _sendAiPrompt,
                             tooltip: 'Send',
