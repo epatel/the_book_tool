@@ -8,7 +8,7 @@
 PRODUCT_NAME = the_book_tool
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.theBookTool
+PRODUCT_BUNDLE_IDENTIFIER = com.memention.theBookTool
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 Edward Patel. All rights reserved.
