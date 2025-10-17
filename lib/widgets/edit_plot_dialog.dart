@@ -361,12 +361,70 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                         ),
                       )
                     else
-                      IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: _aiPromptController.text.isEmpty
-                            ? null
-                            : _sendAiPrompt,
-                        tooltip: 'Send',
+                      Column(
+                        children: [
+                          PopupMenuButton<Prompt>(
+                            icon: const Icon(Icons.bookmark),
+                            tooltip: 'Use Template',
+                            onSelected: (template) {
+                              setState(() {
+                                // Substitute {title}/{name} with the item's actual title
+                                final promptText = template.content
+                                    .replaceAll('{title}', _titleController.text)
+                                    .replaceAll('{name}', _titleController.text);
+                                _aiPromptController.text = promptText;
+                                _enableCommands = template.command;
+                              });
+                            },
+                            itemBuilder: (context) {
+                              final promptProvider = Provider.of<PromptProvider>(
+                                context,
+                                listen: false,
+                              );
+                              final templates = promptProvider.prompts
+                                  .where((p) => p.isTemplate)
+                                  .toList();
+
+                              if (templates.isEmpty) {
+                                return [
+                                  const PopupMenuItem(
+                                    enabled: false,
+                                    child: DSText.bodySmall('No templates available'),
+                                  ),
+                                ];
+                              }
+
+                              return templates.map((template) {
+                                return PopupMenuItem<Prompt>(
+                                  value: template,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      DSText.bodyMedium(template.title),
+                                      if (template.command)
+                                        DSText.bodySmall(
+                                          'Command mode',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: _aiPromptController.text.isEmpty
+                                ? null
+                                : _sendAiPrompt,
+                            tooltip: 'Send',
+                          ),
+                        ],
                       ),
                   ],
                 ),

@@ -301,12 +301,94 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                         ),
                       )
                     else
-                      IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: _aiPromptController.text.isEmpty
-                            ? null
-                            : _sendAiPrompt,
-                        tooltip: 'Send',
+                      Column(
+                        children: [
+                          PopupMenuButton<Prompt>(
+                            icon: const Icon(Icons.bookmark),
+                            tooltip: 'Use Template',
+                            onSelected: (template) {
+                              setState(() {
+                                // Check if book has a prologue (first chapter with title "Prologue")
+                                final chapterProvider = Provider.of<ChapterProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                final hasPrologue = chapterProvider.chapters.isNotEmpty &&
+                                    chapterProvider.chapters.first.orderIndex == 0 &&
+                                    chapterProvider.chapters.first.title.toLowerCase() == 'prologue';
+
+                                // Determine chapter text
+                                final isPrologue = widget.chapter.orderIndex == 0 &&
+                                    _titleController.text.toLowerCase() == 'prologue';
+
+                                final String chapterText;
+                                if (isPrologue) {
+                                  chapterText = 'Prologue';
+                                } else if (hasPrologue) {
+                                  // If book has prologue, use orderIndex as-is for chapter numbering
+                                  chapterText = 'Chapter ${widget.chapter.orderIndex}: ${_titleController.text}';
+                                } else {
+                                  // If no prologue, add 1 to orderIndex for chapter numbering
+                                  chapterText = 'Chapter ${widget.chapter.orderIndex + 1}: ${_titleController.text}';
+                                }
+
+                                // Substitute {title}/{name} and {chapter} with actual values
+                                final promptText = template.content
+                                    .replaceAll('{title}', _titleController.text)
+                                    .replaceAll('{name}', _titleController.text)
+                                    .replaceAll('{chapter}', chapterText);
+                                _aiPromptController.text = promptText;
+                              });
+                            },
+                            itemBuilder: (context) {
+                              final promptProvider = Provider.of<PromptProvider>(
+                                context,
+                                listen: false,
+                              );
+                              final templates = promptProvider.prompts
+                                  .where((p) => p.isTemplate && !p.command)
+                                  .toList();
+
+                              if (templates.isEmpty) {
+                                return [
+                                  const PopupMenuItem(
+                                    enabled: false,
+                                    child: DSText.bodySmall('No templates available'),
+                                  ),
+                                ];
+                              }
+
+                              return templates.map((template) {
+                                return PopupMenuItem<Prompt>(
+                                  value: template,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      DSText.bodyMedium(template.title),
+                                      if (template.command)
+                                        DSText.bodySmall(
+                                          'Command mode',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.send),
+                            onPressed: _aiPromptController.text.isEmpty
+                                ? null
+                                : _sendAiPrompt,
+                            tooltip: 'Send',
+                          ),
+                        ],
                       ),
                   ],
                 ),

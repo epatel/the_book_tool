@@ -85,7 +85,7 @@ class _MiscPageState extends State<MiscPage> {
         Column(
           children: [
             DSAppBar(
-              title: 'Misc',
+              title: 'Notes',
               actions: [
                 IconButton(
                   icon: Icon(

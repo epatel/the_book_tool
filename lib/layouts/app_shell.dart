@@ -48,6 +48,13 @@ class _AppShellState extends State<AppShell> {
         context,
         listen: false,
       ).addListener(_onDataChanged);
+
+      // Load prompts so they're available for templates throughout the app
+      Provider.of<PromptProvider>(
+        context,
+        listen: false,
+      ).loadPrompts();
+
       _loadSettings();
     });
   }
@@ -336,7 +343,7 @@ class _AppShellState extends State<AppShell> {
                       _NavItem(
                         key: ValueKey('misc_$_updateCounter'),
                         icon: Icons.note,
-                        title: 'Misc',
+                        title: 'Notes',
                         path: '/misc',
                         currentPath: widget.currentPath,
                         countFuture: DatabaseService.numberOfMiscNotes(),
