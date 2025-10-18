@@ -92,7 +92,7 @@ class AIService {
 
       final response = await client.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: const ChatCompletionModel.modelId('gpt-4.1'),
+          model: const ChatCompletionModel.modelId(openAiModel),
           messages: [
             ChatCompletionMessage.system(content: systemMessage),
             ChatCompletionMessage.user(

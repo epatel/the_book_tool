@@ -424,19 +424,14 @@ class _AppShellState extends State<AppShell> {
                 ),
                 Consumer<AIUsageProvider>(
                   builder: (context, usageProvider, child) {
-                    // Calculate cost
-                    final inputCost = usageProvider.promptTokens * 0.0000025;
-                    final outputCost =
-                        usageProvider.completionTokens * 0.000010;
-                    final totalCost = inputCost + outputCost;
+                    // Get pricing for current model
+                    final pricing = getCurrentModelPricing();
 
-                    String formattedCost;
-                    if (totalCost < 0.01) {
-                      formattedCost =
-                          '\$${(totalCost * 100).toStringAsFixed(4)}¢';
-                    } else {
-                      formattedCost = '\$${totalCost.toStringAsFixed(4)}';
-                    }
+                    // Calculate and format cost
+                    final formattedCost = pricing.formatCost(
+                      promptTokens: usageProvider.promptTokens,
+                      completionTokens: usageProvider.completionTokens,
+                    );
 
                     return Container(
                       decoration: BoxDecoration(

@@ -35,6 +35,7 @@ export 'models/plot.dart';
 export 'models/misc_note.dart';
 export 'models/prompt.dart';
 export 'models/ai_command.dart';
+export 'models/model_pricing.dart';
 
 // Services
 export 'services/database_service.dart';
@@ -82,6 +83,7 @@ export 'widgets/ai_response_dialog.dart';
 
 // Local files
 export 'app.dart';
+export 'config.dart';
 export 'router.dart';
 export 'layouts/app_shell.dart';
 export 'pages/book_page.dart';
