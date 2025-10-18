@@ -2,10 +2,12 @@ import 'package:the_book_tool/index.dart';
 
 class EditPromptDialog extends StatefulWidget {
   final Prompt prompt;
+  final bool hasApiKey;
 
   const EditPromptDialog({
     super.key,
     required this.prompt,
+    required this.hasApiKey,
   });
 
   @override
@@ -248,7 +250,9 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
                         IconButton(
                           icon: const Icon(Icons.send),
                           onPressed:
-                              _contentController.text.isEmpty || _isTemplate
+                              _contentController.text.isEmpty ||
+                                  _isTemplate ||
+                                  !widget.hasApiKey
                               ? null
                               : () {
                                   if (_formKey.currentState!.validate()) {

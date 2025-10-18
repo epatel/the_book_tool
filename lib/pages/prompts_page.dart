@@ -9,6 +9,7 @@ class PromptsPage extends StatefulWidget {
 
 class _PromptsPageState extends State<PromptsPage> {
   final ManifestRepository _manifestRepository = ManifestRepository();
+  final AIService _aiService = AIService();
   bool _expandedAll = false;
 
   @override
@@ -243,10 +244,16 @@ class _PromptsPageState extends State<PromptsPage> {
   }
 
   Future<void> _showEditPromptDialog(Prompt prompt) async {
+    // Check API key freshly before showing dialog
+    final apiKey = await _aiService.getApiKey();
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => EditPromptDialog(
         prompt: prompt,
+        hasApiKey: apiKey != null && apiKey.isNotEmpty,
       ),
     );
 

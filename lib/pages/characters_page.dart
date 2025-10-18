@@ -11,7 +11,6 @@ class _CharactersPageState extends State<CharactersPage> {
   final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
   bool _expandedAll = false;
-  String _apiKey = '';
   bool _markdownEnabled = false;
   ReadingFont _readingFont = ReadingFont.lora;
   double _fontSize = 14.0;
@@ -27,11 +26,9 @@ class _CharactersPageState extends State<CharactersPage> {
 
   Future<void> _loadSettings() async {
     final manifest = await _manifestRepository.getAllAsMap();
-    final apiKey = await _aiService.getApiKey();
     if (mounted) {
       setState(() {
         _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
-        _apiKey = apiKey ?? '';
         _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
         _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
         _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
@@ -61,11 +58,16 @@ class _CharactersPageState extends State<CharactersPage> {
   }
 
   Future<void> _showEditCharacterDialog(Character character) async {
+    // Check API key freshly before showing dialog
+    final apiKey = await _aiService.getApiKey();
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => EditCharacterDialog(
         character: character,
-        hasApiKey: _apiKey.isNotEmpty,
+        hasApiKey: apiKey != null && apiKey.isNotEmpty,
       ),
     );
 
