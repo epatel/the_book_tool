@@ -169,6 +169,7 @@ class _AppShellState extends State<AppShell> {
           Provider.of<PlotProvider>(context, listen: false).loadPlots(),
           Provider.of<MiscNoteProvider>(context, listen: false).loadNotes(),
           Provider.of<PromptProvider>(context, listen: false).loadPrompts(),
+          Provider.of<AIUsageProvider>(context, listen: false).loadUsage(),
         ]);
         // Trigger update of counts
         _onDataChanged();

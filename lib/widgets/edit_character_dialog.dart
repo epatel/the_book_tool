@@ -24,12 +24,18 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
   late final ScrollController _descriptionScrollController;
   bool _showAiPrompt = false;
   bool _isLoadingAi = false;
+  bool _hasChanges = false;
   TextSelection? _savedSelection;
   double _scrollOffset = 0.0;
+  String _originalName = '';
+  String _originalDescription = '';
 
   @override
   void initState() {
     super.initState();
+    _originalName = widget.character.name;
+    _originalDescription = widget.character.description;
+
     _nameController = TextEditingController(text: widget.character.name);
     _descriptionController = TextEditingController(
       text: widget.character.description,
@@ -37,6 +43,10 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
     _aiPromptController = TextEditingController();
     _descriptionFocusNode = FocusNode();
     _descriptionScrollController = ScrollController();
+
+    // Listen to text changes to detect modifications
+    _nameController.addListener(_checkForChanges);
+    _descriptionController.addListener(_onDescriptionChange);
 
     // Listen to AI prompt changes to update send button state
     _aiPromptController.addListener(() {
@@ -48,12 +58,25 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
 
     // Listen to scroll changes to update overlay
     _descriptionScrollController.addListener(_onDescriptionScrollChange);
-
-    // Listen to selection changes to update saved selection when unfocused
-    _descriptionController.addListener(_onDescriptionSelectionChange);
   }
 
-  void _onDescriptionSelectionChange() {
+  void _checkForChanges() {
+    final hasChanges =
+        _nameController.text.trim() != _originalName.trim() ||
+        _descriptionController.text.trim() != _originalDescription.trim();
+
+    if (hasChanges != _hasChanges) {
+      setState(() {
+        _hasChanges = hasChanges;
+      });
+    }
+  }
+
+  void _onDescriptionChange() {
+    // Check for changes
+    _checkForChanges();
+
+    // Save selection when unfocused
     if (!_descriptionFocusNode.hasFocus) {
       setState(() {
         _savedSelection = _descriptionController.selection;
@@ -81,9 +104,10 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
 
   @override
   void dispose() {
+    _nameController.removeListener(_checkForChanges);
+    _descriptionController.removeListener(_onDescriptionChange);
     _descriptionFocusNode.removeListener(_onDescriptionFocusChange);
     _descriptionScrollController.removeListener(_onDescriptionScrollChange);
-    _descriptionController.removeListener(_onDescriptionSelectionChange);
     _nameController.dispose();
     _descriptionController.dispose();
     _aiPromptController.dispose();
@@ -96,6 +120,32 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
     setState(() {
       _showAiPrompt = !_showAiPrompt;
     });
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_hasChanges) return true;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const DSText.titleLarge('Discard Changes?'),
+        content: const DSText.bodyMedium(
+          'You have unsaved changes. Are you sure you want to discard them?',
+        ),
+        actions: [
+          DSButton.text(
+            label: 'Keep Editing',
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          DSButton.primary(
+            label: 'Discard',
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed ?? false;
   }
 
   Future<void> _confirmDelete() async {
@@ -217,217 +267,246 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const DSText.titleLarge('Edit Character'),
-      content: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: 700,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
-                  }
-                  return null;
-                },
-              ),
-              const DSSpacing.spacing16(),
-              Stack(
-                children: [
-                  TextFormField(
-                    controller: _descriptionController,
-                    focusNode: _descriptionFocusNode,
-                    scrollController: _descriptionScrollController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                    ),
-                    maxLines: 10,
-                    readOnly: _isLoadingAi,
-                    showCursor: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a description';
-                      }
-                      return null;
-                    },
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final shouldPop = await _confirmDiscard();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: AlertDialog(
+        title: const DSText.titleLarge('Edit Character'),
+        content: Form(
+          key: _formKey,
+          child: SizedBox(
+            width: 700,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
                   ),
-                  if (!_descriptionFocusNode.hasFocus &&
-                      _savedSelection != null)
-                    Positioned.fill(
-                      child: ClipRect(
-                        child: IgnorePointer(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 19, 12, 20),
-                            child: TextSelectionHighlight(
-                              text: _descriptionController.text,
-                              selection: _savedSelection!,
-                              style:
-                                  Theme.of(context).textTheme.bodyLarge ??
-                                  const TextStyle(fontSize: 16.0),
-                              maxLines: 10,
-                              scrollOffset: _scrollOffset,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                const DSSpacing.spacing16(),
+                Stack(
+                  children: [
+                    TextFormField(
+                      controller: _descriptionController,
+                      focusNode: _descriptionFocusNode,
+                      scrollController: _descriptionScrollController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                      ),
+                      maxLines: 10,
+                      readOnly: _isLoadingAi,
+                      showCursor: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (!_descriptionFocusNode.hasFocus &&
+                        _savedSelection != null)
+                      Positioned.fill(
+                        child: ClipRect(
+                          child: IgnorePointer(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                19,
+                                12,
+                                20,
+                              ),
+                              child: TextSelectionHighlight(
+                                text: _descriptionController.text,
+                                selection: _savedSelection!,
+                                style:
+                                    Theme.of(context).textTheme.bodyLarge ??
+                                    const TextStyle(fontSize: 16.0),
+                                maxLines: 10,
+                                scrollOffset: _scrollOffset,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              if (_showAiPrompt) ...[
-                const DSSpacing.spacing16(),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _aiPromptController,
-                        decoration: const InputDecoration(
-                          labelText: 'AI Prompt',
-                          border: OutlineInputBorder(),
-                          hintText:
-                              'AI will insert at cursor or replace selection...',
-                        ),
-                        maxLines: 2,
-                        enabled: !_isLoadingAi,
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.spacing8),
-                    if (_isLoadingAi)
-                      const SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    else
-                      Column(
-                        children: [
-                          PopupMenuButton<Prompt>(
-                            icon: const Icon(Icons.bookmark),
-                            tooltip: 'Use Template',
-                            onSelected: (template) {
-                              setState(() {
-                                // Substitute {title}/{name} with the character's name
-                                final promptText = template.content
-                                    .replaceAll('{title}', _nameController.text)
-                                    .replaceAll('{name}', _nameController.text);
-                                _aiPromptController.text = promptText;
-                              });
-                            },
-                            itemBuilder: (context) {
-                              final promptProvider =
-                                  Provider.of<PromptProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-                              final templates = promptProvider.prompts
-                                  .where((p) => p.isTemplate && !p.command)
-                                  .toList();
-
-                              if (templates.isEmpty) {
-                                return [
-                                  const PopupMenuItem(
-                                    enabled: false,
-                                    child: DSText.bodySmall(
-                                      'No templates available',
-                                    ),
-                                  ),
-                                ];
-                              }
-
-                              return templates.map((template) {
-                                return PopupMenuItem<Prompt>(
-                                  value: template,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      DSText.bodyMedium(template.title),
-                                      if (template.command)
-                                        DSText.bodySmall(
-                                          'Command mode',
-                                          style: TextStyle(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              }).toList();
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed:
-                                _aiPromptController.text.isEmpty ||
-                                    (_savedSelection == null ||
-                                        !_savedSelection!.isValid)
-                                ? null
-                                : _sendAiPrompt,
-                            tooltip: 'Send',
-                          ),
-                        ],
-                      ),
                   ],
                 ),
+                if (_showAiPrompt) ...[
+                  const DSSpacing.spacing16(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _aiPromptController,
+                          decoration: const InputDecoration(
+                            labelText: 'AI Prompt',
+                            border: OutlineInputBorder(),
+                            hintText:
+                                'AI will insert at cursor or replace selection...',
+                          ),
+                          maxLines: 2,
+                          enabled: !_isLoadingAi,
+                        ),
+                      ),
+                      SizedBox(width: AppTheme.spacing8),
+                      if (_isLoadingAi)
+                        const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      else
+                        Column(
+                          children: [
+                            PopupMenuButton<Prompt>(
+                              icon: const Icon(Icons.bookmark),
+                              tooltip: 'Use Template',
+                              onSelected: (template) {
+                                setState(() {
+                                  // Substitute {title}/{name} with the character's name
+                                  final promptText = template.content
+                                      .replaceAll(
+                                        '{title}',
+                                        _nameController.text,
+                                      )
+                                      .replaceAll(
+                                        '{name}',
+                                        _nameController.text,
+                                      );
+                                  _aiPromptController.text = promptText;
+                                });
+                              },
+                              itemBuilder: (context) {
+                                final promptProvider =
+                                    Provider.of<PromptProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                final templates = promptProvider.prompts
+                                    .where((p) => p.isTemplate && !p.command)
+                                    .toList();
+
+                                if (templates.isEmpty) {
+                                  return [
+                                    const PopupMenuItem(
+                                      enabled: false,
+                                      child: DSText.bodySmall(
+                                        'No templates available',
+                                      ),
+                                    ),
+                                  ];
+                                }
+
+                                return templates.map((template) {
+                                  return PopupMenuItem<Prompt>(
+                                    value: template,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        DSText.bodyMedium(template.title),
+                                        if (template.command)
+                                          DSText.bodySmall(
+                                            'Command mode',
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList();
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed:
+                                  _aiPromptController.text.isEmpty ||
+                                      (_savedSelection == null ||
+                                          !_savedSelection!.isValid)
+                                  ? null
+                                  : _sendAiPrompt,
+                              tooltip: 'Send',
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-      actions: [
-        Row(
-          children: [
-            DSButton.text(label: 'Delete', onPressed: _confirmDelete),
-            IconButton(
-              icon: Opacity(
-                opacity: _showAiPrompt ? 1.0 : 0.6,
-                child: SvgPicture.asset(
-                  Theme.of(context).brightness == Brightness.dark
-                      ? 'assets/images/OpenAI-white-monoblossom.svg'
-                      : 'assets/images/OpenAI-black-monoblossom.svg',
-                  width: 24,
-                  height: 24,
+        actions: [
+          Row(
+            children: [
+              DSButton.text(label: 'Delete', onPressed: _confirmDelete),
+              IconButton(
+                icon: Opacity(
+                  opacity: _showAiPrompt ? 1.0 : 0.6,
+                  child: SvgPicture.asset(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? 'assets/images/OpenAI-white-monoblossom.svg'
+                        : 'assets/images/OpenAI-black-monoblossom.svg',
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
+                onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+                tooltip: widget.hasApiKey
+                    ? 'AI Assistant'
+                    : 'AI Assistant (API key required)',
               ),
-              onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
-              tooltip: widget.hasApiKey
-                  ? 'AI Assistant'
-                  : 'AI Assistant (API key required)',
-            ),
-            const Spacer(),
-            DSButton.text(
-              label: 'Cancel',
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            DSButton.primary(
-              label: 'Save',
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  Navigator.of(context).pop({
-                    'name': _nameController.text,
-                    'description': _descriptionController.text,
-                  });
-                }
-              },
-            ),
-          ],
-        ),
-      ],
+              const Spacer(),
+              DSButton.text(
+                label: 'Close',
+                onPressed: () async {
+                  final shouldClose = await _confirmDiscard();
+                  if (shouldClose && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+              DSButton.primary(
+                label: 'Save',
+                onPressed: !_hasChanges
+                    ? null
+                    : () {
+                        if (_formKey.currentState!.validate()) {
+                          Navigator.of(context).pop({
+                            'name': _nameController.text,
+                            'description': _descriptionController.text,
+                          });
+                        }
+                      },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

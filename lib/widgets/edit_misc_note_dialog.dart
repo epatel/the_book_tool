@@ -25,17 +25,27 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
   bool _showAiPrompt = false;
   bool _isLoadingAi = false;
   bool _enableCommands = false;
+  bool _hasChanges = false;
   TextSelection? _savedSelection;
   double _scrollOffset = 0.0;
+  String _originalTitle = '';
+  String _originalContent = '';
 
   @override
   void initState() {
     super.initState();
+    _originalTitle = widget.note.title;
+    _originalContent = widget.note.content;
+
     _titleController = TextEditingController(text: widget.note.title);
     _contentController = TextEditingController(text: widget.note.content);
     _aiPromptController = TextEditingController();
     _contentFocusNode = FocusNode();
     _contentScrollController = ScrollController();
+
+    // Listen to text changes to detect modifications
+    _titleController.addListener(_checkForChanges);
+    _contentController.addListener(_onContentChange);
 
     // Listen to AI prompt changes to update send button state
     _aiPromptController.addListener(() {
@@ -47,12 +57,25 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
 
     // Listen to scroll changes to update overlay
     _contentScrollController.addListener(_onContentScrollChange);
-
-    // Listen to selection changes to update saved selection when unfocused
-    _contentController.addListener(_onContentSelectionChange);
   }
 
-  void _onContentSelectionChange() {
+  void _checkForChanges() {
+    final hasChanges =
+        _titleController.text.trim() != _originalTitle.trim() ||
+        _contentController.text.trim() != _originalContent.trim();
+
+    if (hasChanges != _hasChanges) {
+      setState(() {
+        _hasChanges = hasChanges;
+      });
+    }
+  }
+
+  void _onContentChange() {
+    // Check for changes
+    _checkForChanges();
+
+    // Save selection when unfocused
     if (!_contentFocusNode.hasFocus) {
       setState(() {
         _savedSelection = _contentController.selection;
@@ -80,9 +103,10 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
 
   @override
   void dispose() {
+    _titleController.removeListener(_checkForChanges);
+    _contentController.removeListener(_onContentChange);
     _contentFocusNode.removeListener(_onContentFocusChange);
     _contentScrollController.removeListener(_onContentScrollChange);
-    _contentController.removeListener(_onContentSelectionChange);
     _titleController.dispose();
     _contentController.dispose();
     _aiPromptController.dispose();
@@ -95,6 +119,32 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
     setState(() {
       _showAiPrompt = !_showAiPrompt;
     });
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_hasChanges) return true;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const DSText.titleLarge('Discard Changes?'),
+        content: const DSText.bodyMedium(
+          'You have unsaved changes. Are you sure you want to discard them?',
+        ),
+        actions: [
+          DSButton.text(
+            label: 'Keep Editing',
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          DSButton.primary(
+            label: 'Discard',
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed ?? false;
   }
 
   Future<void> _confirmDelete() async {
@@ -126,6 +176,16 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
   Future<void> _sendAiPrompt() async {
     if (_aiPromptController.text.isEmpty) return;
 
+    // Capture providers before async operations
+    final noteProvider = Provider.of<MiscNoteProvider>(
+      context,
+      listen: false,
+    );
+    final usageProvider = Provider.of<AIUsageProvider>(
+      context,
+      listen: false,
+    );
+
     // If command mode is enabled, save current edits first
     if (_enableCommands) {
       if (!_formKey.currentState!.validate()) return;
@@ -135,10 +195,7 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
         content: _contentController.text,
       );
 
-      await Provider.of<MiscNoteProvider>(
-        context,
-        listen: false,
-      ).updateNote(updatedNote);
+      await noteProvider.updateNote(updatedNote);
     }
 
     setState(() {
@@ -146,12 +203,6 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
     });
 
     try {
-      // Capture provider before async operations
-      final usageProvider = Provider.of<AIUsageProvider>(
-        context,
-        listen: false,
-      );
-
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
@@ -254,243 +305,266 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const DSText.titleLarge('Edit Note'),
-      content: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: 700,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const DSSpacing.spacing16(),
-              Stack(
-                children: [
-                  TextFormField(
-                    controller: _contentController,
-                    focusNode: _contentFocusNode,
-                    scrollController: _contentScrollController,
-                    decoration: const InputDecoration(
-                      labelText: 'Content',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                    ),
-                    maxLines: 10,
-                    readOnly: _isLoadingAi,
-                    showCursor: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter content';
-                      }
-                      return null;
-                    },
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final shouldPop = await _confirmDiscard();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: AlertDialog(
+        title: const DSText.titleLarge('Edit Note'),
+        content: Form(
+          key: _formKey,
+          child: SizedBox(
+            width: 700,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
                   ),
-                  if (!_contentFocusNode.hasFocus && _savedSelection != null)
-                    Positioned.fill(
-                      child: ClipRect(
-                        child: IgnorePointer(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 19, 12, 20),
-                            child: TextSelectionHighlight(
-                              text: _contentController.text,
-                              selection: _savedSelection!,
-                              style:
-                                  Theme.of(context).textTheme.bodyLarge ??
-                                  const TextStyle(fontSize: 16.0),
-                              maxLines: 10,
-                              scrollOffset: _scrollOffset,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a title';
+                    }
+                    return null;
+                  },
+                ),
+                const DSSpacing.spacing16(),
+                Stack(
+                  children: [
+                    TextFormField(
+                      controller: _contentController,
+                      focusNode: _contentFocusNode,
+                      scrollController: _contentScrollController,
+                      decoration: const InputDecoration(
+                        labelText: 'Content',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.fromLTRB(12, 20, 12, 20),
+                      ),
+                      maxLines: 10,
+                      readOnly: _isLoadingAi,
+                      showCursor: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter content';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (!_contentFocusNode.hasFocus && _savedSelection != null)
+                      Positioned.fill(
+                        child: ClipRect(
+                          child: IgnorePointer(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                19,
+                                12,
+                                20,
+                              ),
+                              child: TextSelectionHighlight(
+                                text: _contentController.text,
+                                selection: _savedSelection!,
+                                style:
+                                    Theme.of(context).textTheme.bodyLarge ??
+                                    const TextStyle(fontSize: 16.0),
+                                maxLines: 10,
+                                scrollOffset: _scrollOffset,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              if (_showAiPrompt) ...[
-                const DSSpacing.spacing16(),
-                CheckboxListTile(
-                  title: const DSText.bodySmall('Enable command mode'),
-                  subtitle: const DSText.bodySmall(
-                    'Allow AI to create new chapters, characters, plots, and notes',
-                  ),
-                  value: _enableCommands,
-                  onChanged: _isLoadingAi
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _enableCommands = value ?? false;
-                          });
-                        },
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const DSSpacing.spacing8(),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _aiPromptController,
-                        decoration: InputDecoration(
-                          labelText: 'AI Prompt',
-                          border: const OutlineInputBorder(),
-                          hintText: _enableCommands
-                              ? 'AI can create new items with commands...'
-                              : 'AI will insert at cursor or replace selection...',
-                        ),
-                        maxLines: 2,
-                        enabled: !_isLoadingAi,
-                      ),
-                    ),
-                    SizedBox(width: AppTheme.spacing8),
-                    if (_isLoadingAi)
-                      const SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    else
-                      Column(
-                        children: [
-                          // Template popup button
-                          PopupMenuButton<Prompt>(
-                            icon: const Icon(Icons.bookmark),
-                            tooltip: 'Use Template',
-                            onSelected: (template) {
-                              setState(() {
-                                // Substitute {title}/{name} with the item's actual title
-                                final promptText = template.content
-                                    .replaceAll(
-                                      '{title}',
-                                      _titleController.text,
-                                    )
-                                    .replaceAll(
-                                      '{name}',
-                                      _titleController.text,
-                                    );
-                                _aiPromptController.text = promptText;
-                                _enableCommands = template.command;
-                              });
-                            },
-                            itemBuilder: (context) {
-                              final promptProvider =
-                                  Provider.of<PromptProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-                              final templates = promptProvider.prompts
-                                  .where((p) => p.isTemplate)
-                                  .toList();
-
-                              if (templates.isEmpty) {
-                                return [
-                                  const PopupMenuItem(
-                                    enabled: false,
-                                    child: DSText.bodySmall(
-                                      'No templates available',
-                                    ),
-                                  ),
-                                ];
-                              }
-
-                              return templates.map((template) {
-                                return PopupMenuItem<Prompt>(
-                                  value: template,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      DSText.bodyMedium(template.title),
-                                      if (template.command)
-                                        DSText.bodySmall(
-                                          'Command mode',
-                                          style: TextStyle(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              }).toList();
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.send),
-                            onPressed:
-                                _aiPromptController.text.isEmpty ||
-                                    (!_enableCommands &&
-                                        (_savedSelection == null ||
-                                            !_savedSelection!.isValid))
-                                ? null
-                                : _sendAiPrompt,
-                            tooltip: 'Send',
-                          ),
-                        ],
-                      ),
                   ],
                 ),
+                if (_showAiPrompt) ...[
+                  const DSSpacing.spacing16(),
+                  CheckboxListTile(
+                    title: const DSText.bodySmall('Enable command mode'),
+                    subtitle: const DSText.bodySmall(
+                      'Allow AI to create new chapters, characters, plots, and notes',
+                    ),
+                    value: _enableCommands,
+                    onChanged: _isLoadingAi
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _enableCommands = value ?? false;
+                            });
+                          },
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  const DSSpacing.spacing8(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _aiPromptController,
+                          decoration: InputDecoration(
+                            labelText: 'AI Prompt',
+                            border: const OutlineInputBorder(),
+                            hintText: _enableCommands
+                                ? 'AI can create new items with commands...'
+                                : 'AI will insert at cursor or replace selection...',
+                          ),
+                          maxLines: 2,
+                          enabled: !_isLoadingAi,
+                        ),
+                      ),
+                      SizedBox(width: AppTheme.spacing8),
+                      if (_isLoadingAi)
+                        const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      else
+                        Column(
+                          children: [
+                            // Template popup button
+                            PopupMenuButton<Prompt>(
+                              icon: const Icon(Icons.bookmark),
+                              tooltip: 'Use Template',
+                              onSelected: (template) {
+                                setState(() {
+                                  // Substitute {title}/{name} with the item's actual title
+                                  final promptText = template.content
+                                      .replaceAll(
+                                        '{title}',
+                                        _titleController.text,
+                                      )
+                                      .replaceAll(
+                                        '{name}',
+                                        _titleController.text,
+                                      );
+                                  _aiPromptController.text = promptText;
+                                  _enableCommands = template.command;
+                                });
+                              },
+                              itemBuilder: (context) {
+                                final promptProvider =
+                                    Provider.of<PromptProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                final templates = promptProvider.prompts
+                                    .where((p) => p.isTemplate)
+                                    .toList();
+
+                                if (templates.isEmpty) {
+                                  return [
+                                    const PopupMenuItem(
+                                      enabled: false,
+                                      child: DSText.bodySmall(
+                                        'No templates available',
+                                      ),
+                                    ),
+                                  ];
+                                }
+
+                                return templates.map((template) {
+                                  return PopupMenuItem<Prompt>(
+                                    value: template,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        DSText.bodyMedium(template.title),
+                                        if (template.command)
+                                          DSText.bodySmall(
+                                            'Command mode',
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList();
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed:
+                                  _aiPromptController.text.isEmpty ||
+                                      (!_enableCommands &&
+                                          (_savedSelection == null ||
+                                              !_savedSelection!.isValid))
+                                  ? null
+                                  : _sendAiPrompt,
+                              tooltip: 'Send',
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-      actions: [
-        Row(
-          children: [
-            DSButton.text(label: 'Delete', onPressed: _confirmDelete),
-            IconButton(
-              icon: Opacity(
-                opacity: _showAiPrompt ? 1.0 : 0.6,
-                child: SvgPicture.asset(
-                  Theme.of(context).brightness == Brightness.dark
-                      ? 'assets/images/OpenAI-white-monoblossom.svg'
-                      : 'assets/images/OpenAI-black-monoblossom.svg',
-                  width: 24,
-                  height: 24,
+        actions: [
+          Row(
+            children: [
+              DSButton.text(label: 'Delete', onPressed: _confirmDelete),
+              IconButton(
+                icon: Opacity(
+                  opacity: _showAiPrompt ? 1.0 : 0.6,
+                  child: SvgPicture.asset(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? 'assets/images/OpenAI-white-monoblossom.svg'
+                        : 'assets/images/OpenAI-black-monoblossom.svg',
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
+                onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+                tooltip: widget.hasApiKey
+                    ? 'AI Assistant'
+                    : 'AI Assistant (API key required)',
               ),
-              onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
-              tooltip: widget.hasApiKey
-                  ? 'AI Assistant'
-                  : 'AI Assistant (API key required)',
-            ),
-            const Spacer(),
-            DSButton.text(
-              label: 'Cancel',
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            DSButton.primary(
-              label: 'Save',
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  Navigator.of(context).pop({
-                    'title': _titleController.text,
-                    'content': _contentController.text,
-                  });
-                }
-              },
-            ),
-          ],
-        ),
-      ],
+              const Spacer(),
+              DSButton.text(
+                label: 'Close',
+                onPressed: () async {
+                  final shouldClose = await _confirmDiscard();
+                  if (shouldClose && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+              ),
+              DSButton.primary(
+                label: 'Save',
+                onPressed: !_hasChanges
+                    ? null
+                    : () {
+                        if (_formKey.currentState!.validate()) {
+                          Navigator.of(context).pop({
+                            'title': _titleController.text,
+                            'content': _contentController.text,
+                          });
+                        }
+                      },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
