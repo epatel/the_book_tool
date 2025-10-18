@@ -132,6 +132,12 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
     });
 
     try {
+      // Capture provider before async operations
+      final usageProvider = Provider.of<AIUsageProvider>(
+        context,
+        listen: false,
+      );
+
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
@@ -139,7 +145,7 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
       final selection = _descriptionController.selection;
       final description = _descriptionController.text;
 
-      final context = {
+      final contextData = {
         'currentItem': {
           'type': 'character',
           'id': widget.character.id,
@@ -163,7 +169,8 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
       final aiService = AIService();
       final response = await aiService.sendPrompt(
         prompt: _aiPromptController.text,
-        context: context,
+        context: contextData,
+        usageProvider: usageProvider,
       );
 
       if (response != null && mounted) {
@@ -189,7 +196,7 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
         }
       } else if (mounted) {
         // Show error if no API key or request failed
-        ScaffoldMessenger.of(this.context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
               'AI request failed. Please check your API key in settings.',
@@ -319,10 +326,11 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                               });
                             },
                             itemBuilder: (context) {
-                              final promptProvider = Provider.of<PromptProvider>(
-                                context,
-                                listen: false,
-                              );
+                              final promptProvider =
+                                  Provider.of<PromptProvider>(
+                                    context,
+                                    listen: false,
+                                  );
                               final templates = promptProvider.prompts
                                   .where((p) => p.isTemplate && !p.command)
                                   .toList();
@@ -331,7 +339,9 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                                 return [
                                   const PopupMenuItem(
                                     enabled: false,
-                                    child: DSText.bodySmall('No templates available'),
+                                    child: DSText.bodySmall(
+                                      'No templates available',
+                                    ),
                                   ),
                                 ];
                               }
@@ -340,7 +350,8 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                                 return PopupMenuItem<Prompt>(
                                   value: template,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       DSText.bodyMedium(template.title),
@@ -348,9 +359,9 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                                         DSText.bodySmall(
                                           'Command mode',
                                           style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                     ],
@@ -361,7 +372,8 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: _aiPromptController.text.isEmpty ||
+                            onPressed:
+                                _aiPromptController.text.isEmpty ||
                                     (_savedSelection == null ||
                                         !_savedSelection!.isValid)
                                 ? null

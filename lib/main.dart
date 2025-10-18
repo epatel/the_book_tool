@@ -26,6 +26,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MiscNoteProvider()),
         ChangeNotifierProvider(create: (_) => PromptProvider()),
         ChangeNotifierProvider(create: (_) => TtsProvider()),
+        ChangeNotifierProvider(create: (_) => AIUsageProvider()),
       ],
       child: const App(),
     ),

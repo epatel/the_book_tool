@@ -88,185 +88,142 @@ class _PlotsPageState extends State<PlotsPage> {
     }
   }
 
+  bool _shouldShowNotForAiBadge(String title, String description) {
+    return title.contains('{not-for-ai}') ||
+        description.contains('{not-for-ai}');
+  }
+
+  String _filterNotForAiMarker(String text) {
+    return text.replaceAll('{not-for-ai}', '').trim();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Column(
       children: [
-        Column(
-          children: [
-            DSAppBar(
-              title: 'Plots',
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    _expandedAll ? Icons.unfold_less : Icons.unfold_more,
-                  ),
-                  tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
-                  onPressed: _toggleExpandAll,
-                ),
-              ],
+        DSAppBar(
+          title: 'Plots',
+          titleActions: [
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Add Plot Idea',
+              onPressed: _showAddPlotDialog,
             ),
-            Expanded(
-              child: Consumer<PlotProvider>(
-                builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+          ],
+          actions: [
+            IconButton(
+              icon: Icon(
+                _expandedAll ? Icons.unfold_less : Icons.unfold_more,
+              ),
+              tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
+              onPressed: _toggleExpandAll,
+            ),
+          ],
+        ),
+        Expanded(
+          child: Consumer<PlotProvider>(
+            builder: (context, provider, child) {
+              if (provider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                  if (provider.plots.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.lightbulb_outlined,
-                            size: 64,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.3),
-                          ),
-                          const DSSpacing.spacing16(),
-                          DSText.bodyLarge(
-                            'No plot ideas yet',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                          ),
-                          const DSSpacing.spacing8(),
-                          DSText.bodySmall(
-                            'Tap the + button to add your first plot idea',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.4),
-                            ),
-                          ),
-                        ],
+              if (provider.plots.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outlined,
+                        size: 64,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.3),
                       ),
-                    );
-                  }
-
-                  if (_expandedAll) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(AppTheme.spacing16),
-                      itemCount: provider.plots.length,
-                      itemBuilder: (context, index) {
-                        final plot = provider.plots[index];
-                        return Container(
-                          key: ValueKey(plot.id),
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            bottom: AppTheme.spacing12,
-                          ),
-                          child: DSCard(
-                            onTap: () => _showEditPlotDialog(plot),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                DSText.titleMedium(plot.title),
-                                const DSSpacing.spacing8(),
-                                if (_markdownEnabled)
-                                  MarkdownBody(
-                                    data: plot.description,
-                                    styleSheet: MarkdownStyleSheet(
-                                      p: _readingFont.getTextStyle(
-                                        fontSize: _fontSize,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  Text(
-                                    plot.description,
-                                    style: _readingFont.getTextStyle(
-                                      fontSize: _fontSize,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-
-                  return ReorderableListView.builder(
-                    padding: const EdgeInsets.all(AppTheme.spacing16),
-                    itemCount: provider.plots.length,
-                    proxyDecorator: (child, index, animation) {
-                      return AnimatedBuilder(
-                        animation: animation,
-                        builder: (context, child) {
-                          return Material(
-                            elevation: 0,
-                            color: Colors.transparent,
-                            child: child,
-                          );
-                        },
-                        child: child,
-                      );
-                    },
-                    onReorder: (oldIndex, newIndex) {
-                      if (oldIndex < newIndex) {
-                        newIndex -= 1;
-                      }
-                      final plots = List<Plot>.from(provider.plots);
-                      final plot = plots.removeAt(oldIndex);
-                      plots.insert(newIndex, plot);
-                      Provider.of<PlotProvider>(
-                        context,
-                        listen: false,
-                      ).reorderPlots(plots);
-                    },
-                    itemBuilder: (context, index) {
-                      final plot = provider.plots[index];
-                      return Container(
-                        key: ValueKey(plot.id),
-                        width: double.infinity,
-                        padding: const EdgeInsets.only(
-                          bottom: AppTheme.spacing12,
+                      const DSSpacing.spacing16(),
+                      DSText.bodyLarge(
+                        'No plot ideas yet',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
-                        child: DSCard(
-                          onTap: () => _showEditPlotDialog(plot),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              DSText.titleMedium(plot.title),
-                              const DSSpacing.spacing8(),
-                              if (_markdownEnabled)
-                                SizedBox(
-                                  height: AppTheme.collapsedContentHeight,
-                                  child: SingleChildScrollView(
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    child: MarkdownBody(
-                                      data: plot.description,
-                                      styleSheet: MarkdownStyleSheet(
-                                        p: _readingFont.getTextStyle(
-                                          fontSize: _fontSize,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
+                      ),
+                      const DSSpacing.spacing8(),
+                      DSText.bodySmall(
+                        'Tap the + button to add your first plot idea',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (_expandedAll) {
+                return ListView.builder(
+                  padding: const EdgeInsets.all(AppTheme.spacing16),
+                  itemCount: provider.plots.length,
+                  itemBuilder: (context, index) {
+                    final plot = provider.plots[index];
+                    return Container(
+                      key: ValueKey(plot.id),
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(
+                        bottom: AppTheme.spacing12,
+                      ),
+                      child: DSCard(
+                        onTap: () => _showEditPlotDialog(plot),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                DSText.titleMedium(
+                                  _filterNotForAiMarker(plot.title),
+                                ),
+                                if (_shouldShowNotForAiBadge(
+                                  plot.title,
+                                  plot.description,
+                                )) ...[
+                                  const SizedBox(width: 8),
+                                  Tooltip(
+                                    message:
+                                        'This content is excluded from AI requests',
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: DSText.bodySmall(
+                                        'Not for AI',
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimaryContainer,
                                         ),
                                       ),
                                     ),
                                   ),
-                                )
-                              else
-                                DSText.bodyMedium(
-                                  plot.description,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: _readingFont.getTextStyle(
+                                ],
+                              ],
+                            ),
+                            const DSSpacing.spacing8(),
+                            if (_markdownEnabled)
+                              MarkdownBody(
+                                data: plot.description,
+                                styleSheet: MarkdownStyleSheet(
+                                  p: _readingFont.getTextStyle(
                                     fontSize: _fontSize,
                                     color: Theme.of(context)
                                         .colorScheme
@@ -274,24 +231,143 @@ class _PlotsPageState extends State<PlotsPage> {
                                         .withValues(alpha: 0.7),
                                   ),
                                 ),
-                            ],
-                          ),
+                              )
+                            else
+                              Text(
+                                plot.description,
+                                style: _readingFont.getTextStyle(
+                                  fontSize: _fontSize,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ),
+                          ],
                         ),
+                      ),
+                    );
+                  },
+                );
+              }
+
+              return ReorderableListView.builder(
+                padding: const EdgeInsets.all(AppTheme.spacing16),
+                itemCount: provider.plots.length,
+                proxyDecorator: (child, index, animation) {
+                  return AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, child) {
+                      return Material(
+                        elevation: 0,
+                        color: Colors.transparent,
+                        child: child,
                       );
                     },
+                    child: child,
                   );
                 },
-              ),
-            ),
-          ],
-        ),
-        Positioned(
-          right: AppTheme.spacing16,
-          bottom: AppTheme.spacing16,
-          child: DSFloatingActionButton(
-            icon: Icons.add,
-            tooltip: 'Add Plot Idea',
-            onPressed: _showAddPlotDialog,
+                onReorder: (oldIndex, newIndex) {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  final plots = List<Plot>.from(provider.plots);
+                  final plot = plots.removeAt(oldIndex);
+                  plots.insert(newIndex, plot);
+                  Provider.of<PlotProvider>(
+                    context,
+                    listen: false,
+                  ).reorderPlots(plots);
+                },
+                itemBuilder: (context, index) {
+                  final plot = provider.plots[index];
+                  return Container(
+                    key: ValueKey(plot.id),
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(
+                      bottom: AppTheme.spacing12,
+                    ),
+                    child: DSCard(
+                      onTap: () => _showEditPlotDialog(plot),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              DSText.titleMedium(
+                                _filterNotForAiMarker(plot.title),
+                              ),
+                              if (_shouldShowNotForAiBadge(
+                                plot.title,
+                                plot.description,
+                              )) ...[
+                                const SizedBox(width: 8),
+                                Tooltip(
+                                  message:
+                                      'This content is excluded from AI requests',
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(
+                                        999,
+                                      ),
+                                    ),
+                                    child: DSText.bodySmall(
+                                      'Not for AI',
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const DSSpacing.spacing8(),
+                          if (_markdownEnabled)
+                            SizedBox(
+                              height: AppTheme.collapsedContentHeight,
+                              child: SingleChildScrollView(
+                                physics: const NeverScrollableScrollPhysics(),
+                                child: MarkdownBody(
+                                  data: plot.description,
+                                  styleSheet: MarkdownStyleSheet(
+                                    p: _readingFont.getTextStyle(
+                                      fontSize: _fontSize,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            DSText.bodyMedium(
+                              plot.description,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: _readingFont.getTextStyle(
+                                fontSize: _fontSize,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],

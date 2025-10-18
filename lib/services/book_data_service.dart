@@ -8,6 +8,11 @@ class BookDataService {
   final PlotRepository _plotRepository = PlotRepository();
   final MiscNoteRepository _miscNoteRepository = MiscNoteRepository();
 
+  /// Check if content contains the not-for-ai marker
+  bool _shouldFilterFromAI(String text) {
+    return text.contains('{not-for-ai}');
+  }
+
   Future<Map<String, dynamic>> collectAllBookData() async {
     final manifest = await _manifestRepository.getAllAsMap();
     final chapters = await _chapterRepository.getAll();
@@ -23,6 +28,11 @@ class BookDataService {
         'markdown': manifest['Markdown']?.toLowerCase() == 'true',
       },
       'chapters': chapters
+          .where(
+            (chapter) =>
+                !_shouldFilterFromAI(chapter.title) &&
+                !_shouldFilterFromAI(chapter.content),
+          )
           .map(
             (chapter) => {
               'id': chapter.id,
@@ -35,6 +45,11 @@ class BookDataService {
           )
           .toList(),
       'characters': characters
+          .where(
+            (character) =>
+                !_shouldFilterFromAI(character.name) &&
+                !_shouldFilterFromAI(character.description),
+          )
           .map(
             (character) => {
               'id': character.id,
@@ -47,6 +62,11 @@ class BookDataService {
           )
           .toList(),
       'plots': plots
+          .where(
+            (plot) =>
+                !_shouldFilterFromAI(plot.title) &&
+                !_shouldFilterFromAI(plot.description),
+          )
           .map(
             (plot) => {
               'id': plot.id,
@@ -59,6 +79,11 @@ class BookDataService {
           )
           .toList(),
       'miscNotes': miscNotes
+          .where(
+            (note) =>
+                !_shouldFilterFromAI(note.title) &&
+                !_shouldFilterFromAI(note.content),
+          )
           .map(
             (note) => {
               'id': note.id,

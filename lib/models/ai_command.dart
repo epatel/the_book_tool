@@ -4,14 +4,44 @@ import 'dart:convert';
 class AIResponse {
   final String? text;
   final List<AICommand> commands;
+  final int? promptTokens;
+  final int? completionTokens;
+  final int? totalTokens;
+  final String? model;
 
   const AIResponse({
     this.text,
     this.commands = const [],
+    this.promptTokens,
+    this.completionTokens,
+    this.totalTokens,
+    this.model,
   });
 
   bool get hasText => text != null && text!.isNotEmpty;
   bool get hasCommands => commands.isNotEmpty;
+
+  /// Calculate estimated cost based on model and tokens
+  /// Prices as of GPT-4o (January 2025)
+  double get estimatedCost {
+    if (totalTokens == null || model == null) return 0.0;
+
+    // GPT-4o pricing (per 1M tokens)
+    // Input: $2.50 / 1M tokens = $0.0000025 per token
+    // Output: $10.00 / 1M tokens = $0.000010 per token
+    final inputCost = (promptTokens ?? 0) * 0.0000025;
+    final outputCost = (completionTokens ?? 0) * 0.000010;
+
+    return inputCost + outputCost;
+  }
+
+  String get formattedCost {
+    final cost = estimatedCost;
+    if (cost < 0.01) {
+      return '\$${(cost * 100).toStringAsFixed(4)}¢';
+    }
+    return '\$${cost.toStringAsFixed(4)}';
+  }
 }
 
 /// Base class for AI commands

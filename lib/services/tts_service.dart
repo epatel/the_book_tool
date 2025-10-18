@@ -143,8 +143,7 @@ class TtsService {
 
     // Remove list markers (- * + 1.)
     cleaned = cleaned.replaceAll(RegExp(r'^[\*\-\+]\s+', multiLine: true), '');
-    cleaned =
-        cleaned.replaceAll(RegExp(r'^\d+\.\s+', multiLine: true), '');
+    cleaned = cleaned.replaceAll(RegExp(r'^\d+\.\s+', multiLine: true), '');
 
     return cleaned.trim();
   }

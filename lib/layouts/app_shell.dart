@@ -84,6 +84,15 @@ class _AppShellState extends State<AppShell> {
     await _manifestRepository.set('LastSection', widget.currentPath);
   }
 
+  String _formatTokens(int tokens) {
+    if (tokens >= 1000000) {
+      return '${(tokens / 1000000).toStringAsFixed(2)}M';
+    } else if (tokens >= 1000) {
+      return '${(tokens / 1000).toStringAsFixed(1)}K';
+    }
+    return tokens.toString();
+  }
+
   Future<void> _loadSettings() async {
     final manifest = await _manifestRepository.getAllAsMap();
     final apiKey = await _aiService.getApiKey();
@@ -153,7 +162,10 @@ class _AppShellState extends State<AppShell> {
       if (mounted) {
         await Future.wait([
           Provider.of<ChapterProvider>(context, listen: false).loadChapters(),
-          Provider.of<CharacterProvider>(context, listen: false).loadCharacters(),
+          Provider.of<CharacterProvider>(
+            context,
+            listen: false,
+          ).loadCharacters(),
           Provider.of<PlotProvider>(context, listen: false).loadPlots(),
           Provider.of<MiscNoteProvider>(context, listen: false).loadNotes(),
           Provider.of<PromptProvider>(context, listen: false).loadPrompts(),
@@ -409,6 +421,99 @@ class _AppShellState extends State<AppShell> {
                       ),
                     ],
                   ),
+                ),
+                Consumer<AIUsageProvider>(
+                  builder: (context, usageProvider, child) {
+                    // Calculate cost
+                    final inputCost = usageProvider.promptTokens * 0.0000025;
+                    final outputCost =
+                        usageProvider.completionTokens * 0.000010;
+                    final totalCost = inputCost + outputCost;
+
+                    String formattedCost;
+                    if (totalCost < 0.01) {
+                      formattedCost =
+                          '\$${(totalCost * 100).toStringAsFixed(4)}¢';
+                    } else {
+                      formattedCost = '\$${totalCost.toStringAsFixed(4)}';
+                    }
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing12,
+                        vertical: AppTheme.spacing8,
+                      ),
+                      child: Opacity(
+                        opacity: _apiKey.isEmpty ? 0.4 : 1.0,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.analytics_outlined,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                                const SizedBox(width: 6),
+                                DSText.bodySmall(
+                                  'AI Usage',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (_apiKey.isEmpty) ...[
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.lock_outline,
+                                    size: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            DSText.bodySmall(
+                              '${_formatTokens(usageProvider.totalTokens)} tokens',
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            DSText.bodySmall(
+                              formattedCost,
+                              style: TextStyle(
+                                color: _apiKey.isEmpty
+                                    ? Theme.of(context).colorScheme.onSurface
+                                          .withValues(alpha: 0.6)
+                                    : Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 Container(
                   decoration: BoxDecoration(

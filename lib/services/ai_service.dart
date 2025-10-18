@@ -2,16 +2,19 @@ import 'package:the_book_tool/index.dart';
 
 class AIService {
   static const String _keyApiKey = 'openai_api_key';
+  static final _secureStorage = const FlutterSecureStorage();
   OpenAIClient? _client;
 
   Future<String?> getApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyApiKey);
+    return await _secureStorage.read(key: _keyApiKey);
   }
 
   Future<void> setApiKey(String apiKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyApiKey, apiKey);
+    if (apiKey.isEmpty) {
+      await _secureStorage.delete(key: _keyApiKey);
+    } else {
+      await _secureStorage.write(key: _keyApiKey, value: apiKey);
+    }
     _client = null; // Reset client to use new API key
   }
 
@@ -30,6 +33,7 @@ class AIService {
   Future<AIResponse?> sendPrompt({
     required String prompt,
     Map<String, dynamic>? context,
+    AIUsageProvider? usageProvider,
   }) async {
     final client = await _getClient();
     if (client == null) {
@@ -105,17 +109,48 @@ class AIService {
         return null;
       }
 
+      // Extract usage information
+      final usage = response.usage;
+      final promptTokens = usage?.promptTokens;
+      final completionTokens = usage?.completionTokens;
+      final totalTokens = usage?.totalTokens;
+      final modelUsed = response.model;
+
+      // Update cumulative token usage in manifest
+      if (promptTokens != null &&
+          completionTokens != null &&
+          totalTokens != null) {
+        await _updateTokenUsage(
+          promptTokens,
+          completionTokens,
+          totalTokens,
+          usageProvider,
+        );
+      }
+
       // Parse response for commands if enabled
       if (enableCommands) {
         final commands = AICommand.parseFromResponse(content);
         if (commands.isNotEmpty) {
           // If we have commands, return them without text
-          return AIResponse(commands: commands);
+          return AIResponse(
+            commands: commands,
+            promptTokens: promptTokens,
+            completionTokens: completionTokens,
+            totalTokens: totalTokens,
+            model: modelUsed,
+          );
         }
       }
 
       // Return text response (for non-command mode or if no commands found)
-      return AIResponse(text: content);
+      return AIResponse(
+        text: content,
+        promptTokens: promptTokens,
+        completionTokens: completionTokens,
+        totalTokens: totalTokens,
+        model: modelUsed,
+      );
     } catch (e) {
       debugPrint('AI Service Error: $e');
       return null;
@@ -249,6 +284,61 @@ Full book context: $bookData
 The author is asking a general question about their book. Provide helpful, detailed answers based on the book's content.
 Be conversational and thorough in your response.
 ''';
+    }
+  }
+
+  Future<void> _updateTokenUsage(
+    int promptTokens,
+    int completionTokens,
+    int totalTokens,
+    AIUsageProvider? usageProvider,
+  ) async {
+    try {
+      final manifestRepo = ManifestRepository();
+
+      // Get current cumulative values
+      final currentPromptTokens =
+          int.tryParse(
+            (await manifestRepo.get('TotalPromptTokens'))?.value ?? '0',
+          ) ??
+          0;
+      final currentCompletionTokens =
+          int.tryParse(
+            (await manifestRepo.get('TotalCompletionTokens'))?.value ?? '0',
+          ) ??
+          0;
+      final currentTotalTokens =
+          int.tryParse(
+            (await manifestRepo.get('TotalTokens'))?.value ?? '0',
+          ) ??
+          0;
+
+      // Add new usage to cumulative values
+      final newPromptTokens = currentPromptTokens + promptTokens;
+      final newCompletionTokens = currentCompletionTokens + completionTokens;
+      final newTotalTokens = currentTotalTokens + totalTokens;
+
+      // Update manifest
+      await manifestRepo.setMultiple({
+        'TotalPromptTokens': newPromptTokens.toString(),
+        'TotalCompletionTokens': newCompletionTokens.toString(),
+        'TotalTokens': newTotalTokens.toString(),
+      });
+
+      // Notify provider if available
+      if (usageProvider != null) {
+        await usageProvider.updateUsage(
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        );
+      }
+
+      debugPrint(
+        'Updated token usage: +$promptTokens/$completionTokens (total: $newTotalTokens)',
+      );
+    } catch (e) {
+      debugPrint('Error updating token usage: $e');
     }
   }
 }

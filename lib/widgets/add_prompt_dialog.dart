@@ -64,7 +64,8 @@ class _AddPromptDialogState extends State<AddPromptDialog> {
               Row(
                 children: [
                   Tooltip(
-                    message: 'Enable command mode to create new chapters, characters, plots, or notes',
+                    message:
+                        'Enable command mode to create new chapters, characters, plots, or notes',
                     child: Checkbox(
                       value: _command,
                       onChanged: (value) {
@@ -81,7 +82,8 @@ class _AddPromptDialogState extends State<AddPromptDialog> {
               Row(
                 children: [
                   Tooltip(
-                    message: 'Mark as template to save for later use (disables send)',
+                    message:
+                        'Mark as template to save for later use (disables send)',
                     child: Checkbox(
                       value: _isTemplate,
                       onChanged: (value) {

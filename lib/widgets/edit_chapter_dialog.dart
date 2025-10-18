@@ -130,6 +130,12 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
     });
 
     try {
+      // Capture provider before async operations
+      final usageProvider = Provider.of<AIUsageProvider>(
+        context,
+        listen: false,
+      );
+
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
@@ -137,7 +143,7 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
       final selection = _contentController.selection;
       final content = _contentController.text;
 
-      final context = {
+      final contextData = {
         'currentItem': {
           'type': 'chapter',
           'id': widget.chapter.id,
@@ -161,7 +167,8 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
       final aiService = AIService();
       final response = await aiService.sendPrompt(
         prompt: _aiPromptController.text,
-        context: context,
+        context: contextData,
+        usageProvider: usageProvider,
       );
 
       if (response != null && mounted) {
@@ -187,7 +194,7 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
         }
       } else if (mounted) {
         // Show error if no API key or request failed
-        ScaffoldMessenger.of(this.context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
               'AI request failed. Please check your API key in settings.',
@@ -309,42 +316,55 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                             onSelected: (template) {
                               setState(() {
                                 // Check if book has a prologue (first chapter with title "Prologue")
-                                final chapterProvider = Provider.of<ChapterProvider>(
-                                  context,
-                                  listen: false,
-                                );
-                                final hasPrologue = chapterProvider.chapters.isNotEmpty &&
-                                    chapterProvider.chapters.first.orderIndex == 0 &&
-                                    chapterProvider.chapters.first.title.toLowerCase() == 'prologue';
+                                final chapterProvider =
+                                    Provider.of<ChapterProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                final hasPrologue =
+                                    chapterProvider.chapters.isNotEmpty &&
+                                    chapterProvider.chapters.first.orderIndex ==
+                                        0 &&
+                                    chapterProvider.chapters.first.title
+                                            .toLowerCase() ==
+                                        'prologue';
 
                                 // Determine chapter text
-                                final isPrologue = widget.chapter.orderIndex == 0 &&
-                                    _titleController.text.toLowerCase() == 'prologue';
+                                final isPrologue =
+                                    widget.chapter.orderIndex == 0 &&
+                                    _titleController.text.toLowerCase() ==
+                                        'prologue';
 
                                 final String chapterText;
                                 if (isPrologue) {
                                   chapterText = 'Prologue';
                                 } else if (hasPrologue) {
                                   // If book has prologue, use orderIndex as-is for chapter numbering
-                                  chapterText = 'Chapter ${widget.chapter.orderIndex}: ${_titleController.text}';
+                                  chapterText =
+                                      'Chapter ${widget.chapter.orderIndex}: ${_titleController.text}';
                                 } else {
                                   // If no prologue, add 1 to orderIndex for chapter numbering
-                                  chapterText = 'Chapter ${widget.chapter.orderIndex + 1}: ${_titleController.text}';
+                                  chapterText =
+                                      'Chapter ${widget.chapter.orderIndex + 1}: ${_titleController.text}';
                                 }
 
                                 // Substitute {title}/{name} and {chapter} with actual values
                                 final promptText = template.content
-                                    .replaceAll('{title}', _titleController.text)
+                                    .replaceAll(
+                                      '{title}',
+                                      _titleController.text,
+                                    )
                                     .replaceAll('{name}', _titleController.text)
                                     .replaceAll('{chapter}', chapterText);
                                 _aiPromptController.text = promptText;
                               });
                             },
                             itemBuilder: (context) {
-                              final promptProvider = Provider.of<PromptProvider>(
-                                context,
-                                listen: false,
-                              );
+                              final promptProvider =
+                                  Provider.of<PromptProvider>(
+                                    context,
+                                    listen: false,
+                                  );
                               final templates = promptProvider.prompts
                                   .where((p) => p.isTemplate && !p.command)
                                   .toList();
@@ -353,7 +373,9 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                                 return [
                                   const PopupMenuItem(
                                     enabled: false,
-                                    child: DSText.bodySmall('No templates available'),
+                                    child: DSText.bodySmall(
+                                      'No templates available',
+                                    ),
                                   ),
                                 ];
                               }
@@ -362,7 +384,8 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                                 return PopupMenuItem<Prompt>(
                                   value: template,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       DSText.bodyMedium(template.title),
@@ -370,9 +393,9 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                                         DSText.bodySmall(
                                           'Command mode',
                                           style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                     ],
@@ -383,7 +406,8 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: _aiPromptController.text.isEmpty ||
+                            onPressed:
+                                _aiPromptController.text.isEmpty ||
                                     (_savedSelection == null ||
                                         !_savedSelection!.isValid)
                                 ? null

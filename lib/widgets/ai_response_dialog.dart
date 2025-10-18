@@ -25,7 +25,9 @@ class AIResponseDialog extends StatelessWidget {
               h3: Theme.of(context).textTheme.titleMedium,
               code: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontFamily: 'monospace',
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
               ),
               codeblockDecoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,

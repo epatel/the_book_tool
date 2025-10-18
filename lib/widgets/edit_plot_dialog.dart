@@ -148,6 +148,12 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
     });
 
     try {
+      // Capture provider before async operations
+      final usageProvider = Provider.of<AIUsageProvider>(
+        context,
+        listen: false,
+      );
+
       final bookDataService = BookDataService();
       final bookData = await bookDataService.collectAllBookData();
 
@@ -155,7 +161,7 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
       final selection = _descriptionController.selection;
       final description = _descriptionController.text;
 
-      final context = {
+      final contextData = {
         'currentItem': {
           'type': 'plot',
           'id': widget.plot.id,
@@ -179,7 +185,8 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
       final aiService = AIService();
       final response = await aiService.sendPrompt(
         prompt: _aiPromptController.text,
-        context: context,
+        context: contextData,
+        usageProvider: usageProvider,
       );
 
       if (response != null && mounted) {
@@ -187,7 +194,7 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
         if (response.hasCommands) {
           final executor = AICommandExecutor();
           final results = await executor.executeCommands(
-            this.context,
+            context,
             response.commands,
           );
 
@@ -196,7 +203,7 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
           final failCount = results.where((r) => !r.success).length;
 
           if (mounted) {
-            ScaffoldMessenger.of(this.context).showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
                   'Commands executed: $successCount succeeded, $failCount failed',
@@ -228,7 +235,7 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
         }
       } else if (mounted) {
         // Show error if no API key or request failed
-        ScaffoldMessenger.of(this.context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
               'AI request failed. Please check your API key in settings.',
@@ -370,17 +377,24 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                               setState(() {
                                 // Substitute {title}/{name} with the item's actual title
                                 final promptText = template.content
-                                    .replaceAll('{title}', _titleController.text)
-                                    .replaceAll('{name}', _titleController.text);
+                                    .replaceAll(
+                                      '{title}',
+                                      _titleController.text,
+                                    )
+                                    .replaceAll(
+                                      '{name}',
+                                      _titleController.text,
+                                    );
                                 _aiPromptController.text = promptText;
                                 _enableCommands = template.command;
                               });
                             },
                             itemBuilder: (context) {
-                              final promptProvider = Provider.of<PromptProvider>(
-                                context,
-                                listen: false,
-                              );
+                              final promptProvider =
+                                  Provider.of<PromptProvider>(
+                                    context,
+                                    listen: false,
+                                  );
                               final templates = promptProvider.prompts
                                   .where((p) => p.isTemplate)
                                   .toList();
@@ -389,7 +403,9 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                                 return [
                                   const PopupMenuItem(
                                     enabled: false,
-                                    child: DSText.bodySmall('No templates available'),
+                                    child: DSText.bodySmall(
+                                      'No templates available',
+                                    ),
                                   ),
                                 ];
                               }
@@ -398,7 +414,8 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                                 return PopupMenuItem<Prompt>(
                                   value: template,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       DSText.bodyMedium(template.title),
@@ -406,9 +423,9 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                                         DSText.bodySmall(
                                           'Command mode',
                                           style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                     ],
@@ -419,7 +436,8 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.send),
-                            onPressed: _aiPromptController.text.isEmpty ||
+                            onPressed:
+                                _aiPromptController.text.isEmpty ||
                                     (!_enableCommands &&
                                         (_savedSelection == null ||
                                             !_savedSelection!.isValid))

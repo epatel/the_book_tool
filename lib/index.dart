@@ -6,6 +6,7 @@ export 'package:sqflite_common_ffi/sqflite_ffi.dart';
 export 'package:path_provider/path_provider.dart';
 export 'package:flutter_markdown/flutter_markdown.dart';
 export 'package:shared_preferences/shared_preferences.dart';
+export 'package:flutter_secure_storage/flutter_secure_storage.dart';
 export 'package:window_manager/window_manager.dart';
 export 'package:openai_dart/openai_dart.dart' hide Image, Batch;
 export 'package:google_fonts/google_fonts.dart';
@@ -61,6 +62,7 @@ export 'providers/plot_provider.dart';
 export 'providers/misc_note_provider.dart';
 export 'providers/prompt_provider.dart';
 export 'providers/tts_provider.dart';
+export 'providers/ai_usage_provider.dart';
 
 // Widgets
 export 'widgets/add_chapter_dialog.dart';

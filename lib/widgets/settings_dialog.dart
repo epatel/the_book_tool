@@ -312,10 +312,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           child: Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -332,57 +331,56 @@ class _SettingsDialogState extends State<SettingsDialog> {
                             ),
                           )
                         : _availableVoices.isEmpty
-                            ? DSText.bodySmall(
-                                'No enhanced/premium voices available',
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.6),
+                        ? DSText.bodySmall(
+                            'No enhanced/premium voices available',
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  initialValue: _ttsVoiceId,
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  items: _availableVoices
+                                      .map(
+                                        (voice) => DropdownMenuItem(
+                                          value: voice['name'],
+                                          child: Text(
+                                            '${voice['name']} (${voice['locale']})',
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      // Find the matching voice to get its locale
+                                      final voice = _availableVoices.firstWhere(
+                                        (v) => v['name'] == value,
+                                      );
+                                      setState(() {
+                                        _ttsVoiceId = value;
+                                        _ttsVoiceLocale = voice['locale'];
+                                      });
+                                    }
+                                  },
                                 ),
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                      initialValue: _ttsVoiceId,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items: _availableVoices
-                                          .map(
-                                            (voice) => DropdownMenuItem(
-                                              value: voice['name'],
-                                              child: Text(
-                                                '${voice['name']} (${voice['locale']})',
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: (value) {
-                                        if (value != null) {
-                                          // Find the matching voice to get its locale
-                                          final voice = _availableVoices.firstWhere(
-                                            (v) => v['name'] == value,
-                                          );
-                                          setState(() {
-                                            _ttsVoiceId = value;
-                                            _ttsVoiceLocale = voice['locale'];
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                  SizedBox(width: AppTheme.spacing8),
-                                  IconButton(
-                                    icon: const Icon(Icons.play_arrow),
-                                    onPressed: _ttsVoiceId == null
-                                        ? null
-                                        : _previewVoice,
-                                    tooltip: 'Preview',
-                                  ),
-                                ],
                               ),
+                              SizedBox(width: AppTheme.spacing8),
+                              IconButton(
+                                icon: const Icon(Icons.play_arrow),
+                                onPressed: _ttsVoiceId == null
+                                    ? null
+                                    : _previewVoice,
+                                tooltip: 'Preview',
+                              ),
+                            ],
+                          ),
                   ),
                 ],
               ),

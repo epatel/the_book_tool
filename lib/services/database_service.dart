@@ -73,7 +73,9 @@ class DatabaseService {
 
       if (hasCreationsColumn && !hasCommandColumn) {
         // Old schema: migrate "creations" to "command" and add "response"
-        debugPrint('Migrating prompts table: creations -> command, adding response');
+        debugPrint(
+          'Migrating prompts table: creations -> command, adding response',
+        );
 
         await db.execute('''
           CREATE TABLE prompts_new (
@@ -116,7 +118,9 @@ class DatabaseService {
 
   static Future<void> _ensureManifestKeys(Database db) async {
     final manifestKeys = await db.query('manifest');
-    final existingKeys = manifestKeys.map((row) => row['key'] as String).toSet();
+    final existingKeys = manifestKeys
+        .map((row) => row['key'] as String)
+        .toSet();
 
     // Add LastSection if it doesn't exist
     if (!existingKeys.contains('LastSection')) {
@@ -147,6 +151,25 @@ class DatabaseService {
       await db.insert('manifest', {'key': 'FontSize', 'value': '14.0'});
       debugPrint('Added FontSize to manifest');
     }
+
+    // Add token usage tracking if it doesn't exist
+    if (!existingKeys.contains('TotalPromptTokens')) {
+      await db.insert('manifest', {'key': 'TotalPromptTokens', 'value': '0'});
+      debugPrint('Added TotalPromptTokens to manifest');
+    }
+
+    if (!existingKeys.contains('TotalCompletionTokens')) {
+      await db.insert('manifest', {
+        'key': 'TotalCompletionTokens',
+        'value': '0',
+      });
+      debugPrint('Added TotalCompletionTokens to manifest');
+    }
+
+    if (!existingKeys.contains('TotalTokens')) {
+      await db.insert('manifest', {'key': 'TotalTokens', 'value': '0'});
+      debugPrint('Added TotalTokens to manifest');
+    }
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -171,6 +194,9 @@ class DatabaseService {
     await db.insert('manifest', {'key': 'FontSize', 'value': '14.0'});
     await db.insert('manifest', {'key': 'LastSection', 'value': '/misc'});
     await db.insert('manifest', {'key': 'ExpandedAll', 'value': 'true'});
+    await db.insert('manifest', {'key': 'TotalPromptTokens', 'value': '0'});
+    await db.insert('manifest', {'key': 'TotalCompletionTokens', 'value': '0'});
+    await db.insert('manifest', {'key': 'TotalTokens', 'value': '0'});
 
     // Create chapters table
     await db.execute('''
@@ -358,6 +384,7 @@ Create and switch between multiple book projects using the Library icon (storage
 - Use markdown formatting for rich text (enable in Settings)
 - Select text in chapters and use AI prompts for assistance
 - Export your finished book to PDF
+- Add `{not-for-ai}` to any title or content to exclude it from AI requests (useful for private notes or work-in-progress content)
 
 Happy writing!''';
 
