@@ -16,6 +16,7 @@ export 'package:flutter_tts/flutter_tts.dart';
 // Design System
 export 'design_system/theme.dart';
 export 'design_system/reading_fonts.dart';
+export 'design_system/widgets/ds_add_icon.dart';
 export 'design_system/widgets/ds_app_bar.dart';
 export 'design_system/widgets/ds_button.dart';
 export 'design_system/widgets/ds_card.dart';

@@ -114,7 +114,7 @@ class _PlotsPageState extends State<PlotsPage> {
           title: 'Plots',
           titleActions: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const DSAddIcon(),
               tooltip: 'Add Plot Idea',
               onPressed: _showAddPlotDialog,
             ),

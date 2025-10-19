@@ -297,7 +297,7 @@ class _PromptsPageState extends State<PromptsPage> {
           title: 'Prompts',
           titleActions: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const DSAddIcon(),
               tooltip: 'Add Prompt',
               onPressed: _showAddPromptDialog,
             ),

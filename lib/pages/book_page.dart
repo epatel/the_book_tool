@@ -164,7 +164,7 @@ class _BookPageState extends State<BookPage> {
           title: _bookName,
           titleActions: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const DSAddIcon(),
               tooltip: 'Add Chapter',
               onPressed: _showAddChapterDialog,
             ),

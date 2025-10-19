@@ -113,7 +113,7 @@ class _MiscPageState extends State<MiscPage> {
           title: 'Notes',
           titleActions: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const DSAddIcon(),
               tooltip: 'Add Note',
               onPressed: _showAddNoteDialog,
             ),
