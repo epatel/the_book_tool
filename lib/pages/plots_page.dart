@@ -44,9 +44,16 @@ class _PlotsPageState extends State<PlotsPage> {
   }
 
   Future<void> _showAddPlotDialog() async {
+    // Check API key freshly before showing dialog
+    final apiKey = await _aiService.getApiKey();
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) => const AddPlotDialog(),
+      builder: (dialogContext) => AddPlotDialog(
+        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {

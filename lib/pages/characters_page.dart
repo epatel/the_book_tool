@@ -44,9 +44,16 @@ class _CharactersPageState extends State<CharactersPage> {
   }
 
   Future<void> _showAddCharacterDialog() async {
+    // Check API key freshly before showing dialog
+    final apiKey = await _aiService.getApiKey();
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) => const AddCharacterDialog(),
+      builder: (dialogContext) => AddCharacterDialog(
+        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {
