@@ -17,6 +17,7 @@ class EditMiscNoteDialog extends StatefulWidget {
 
 class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
   final _formKey = GlobalKey<FormState>();
+  final UiPreferencesService _uiPrefs = UiPreferencesService();
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
   late final TextEditingController _aiPromptController;
@@ -57,6 +58,18 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
 
     // Listen to scroll changes to update overlay
     _contentScrollController.addListener(_onContentScrollChange);
+
+    // Load persisted AI prompt visibility
+    _loadAiPromptPreference();
+  }
+
+  Future<void> _loadAiPromptPreference() async {
+    final showAi = await _uiPrefs.getShowAiPrompt();
+    if (mounted) {
+      setState(() {
+        _showAiPrompt = showAi;
+      });
+    }
   }
 
   void _checkForChanges() {
@@ -119,6 +132,7 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
     setState(() {
       _showAiPrompt = !_showAiPrompt;
     });
+    _uiPrefs.setShowAiPrompt(_showAiPrompt);
   }
 
   Future<bool> _confirmDiscard() async {

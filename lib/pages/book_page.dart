@@ -58,9 +58,16 @@ class _BookPageState extends State<BookPage> {
   }
 
   Future<void> _showAddChapterDialog() async {
+    // Check API key freshly before showing dialog
+    final apiKey = await _aiService.getApiKey();
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) => const AddChapterDialog(),
+      builder: (dialogContext) => AddChapterDialog(
+        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {

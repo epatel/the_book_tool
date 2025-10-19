@@ -17,6 +17,7 @@ class EditCharacterDialog extends StatefulWidget {
 
 class _EditCharacterDialogState extends State<EditCharacterDialog> {
   final _formKey = GlobalKey<FormState>();
+  final UiPreferencesService _uiPrefs = UiPreferencesService();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _aiPromptController;
@@ -58,6 +59,18 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
 
     // Listen to scroll changes to update overlay
     _descriptionScrollController.addListener(_onDescriptionScrollChange);
+
+    // Load persisted AI prompt visibility
+    _loadAiPromptPreference();
+  }
+
+  Future<void> _loadAiPromptPreference() async {
+    final showAi = await _uiPrefs.getShowAiPrompt();
+    if (mounted) {
+      setState(() {
+        _showAiPrompt = showAi;
+      });
+    }
   }
 
   void _checkForChanges() {
@@ -120,6 +133,7 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
     setState(() {
       _showAiPrompt = !_showAiPrompt;
     });
+    _uiPrefs.setShowAiPrompt(_showAiPrompt);
   }
 
   Future<bool> _confirmDiscard() async {

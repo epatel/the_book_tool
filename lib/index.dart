@@ -41,6 +41,7 @@ export 'models/model_pricing.dart';
 export 'services/database_service.dart';
 export 'services/database_manager.dart';
 export 'services/window_preferences_service.dart';
+export 'services/ui_preferences_service.dart';
 export 'services/book_data_service.dart';
 export 'services/ai_service.dart';
 export 'services/ai_command_executor.dart';
