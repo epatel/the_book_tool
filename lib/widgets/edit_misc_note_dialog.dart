@@ -210,6 +210,15 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
       );
 
       await noteProvider.updateNote(updatedNote);
+
+      // Update original values to mark as saved
+      if (mounted) {
+        setState(() {
+          _originalTitle = _titleController.text;
+          _originalContent = _contentController.text;
+          _hasChanges = false;
+        });
+      }
     }
 
     setState(() {
@@ -566,12 +575,38 @@ class _EditMiscNoteDialogState extends State<EditMiscNoteDialog> {
                 label: 'Save',
                 onPressed: !_hasChanges
                     ? null
-                    : () {
+                    : () async {
                         if (_formKey.currentState!.validate()) {
-                          Navigator.of(context).pop({
-                            'title': _titleController.text,
-                            'content': _contentController.text,
+                          // Capture messenger before async operations
+                          final messenger = ScaffoldMessenger.of(context);
+
+                          // Save changes
+                          final noteProvider = Provider.of<MiscNoteProvider>(
+                            context,
+                            listen: false,
+                          );
+                          final updatedNote = widget.note.copyWith(
+                            title: _titleController.text,
+                            content: _contentController.text,
+                          );
+                          await noteProvider.updateNote(updatedNote);
+
+                          // Update original values to mark as saved
+                          setState(() {
+                            _originalTitle = _titleController.text;
+                            _originalContent = _contentController.text;
+                            _hasChanges = false;
                           });
+
+                          // Show feedback
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Note saved'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
                         }
                       },
               ),

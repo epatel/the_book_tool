@@ -226,6 +226,14 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  void _showSearchBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const SearchBottomSheet(),
+    );
+  }
+
   Future<void> _exportToPdf() async {
     final provider = Provider.of<ChapterProvider>(context, listen: false);
 
@@ -361,6 +369,16 @@ class _AppShellState extends State<AppShell> {
                             ).colorScheme.onPrimaryContainer,
                           ),
                         ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.search,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                        ),
+                        tooltip: 'Search',
+                        onPressed: _showSearchBottomSheet,
                       ),
                       IconButton(
                         icon: Icon(

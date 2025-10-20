@@ -84,15 +84,6 @@ class _CharactersPageState extends State<CharactersPage> {
           context,
           listen: false,
         ).deleteCharacter(character.id!);
-      } else {
-        final updatedCharacter = character.copyWith(
-          name: result['name'] as String,
-          description: result['description'] as String,
-        );
-        await Provider.of<CharacterProvider>(
-          context,
-          listen: false,
-        ).updateCharacter(updatedCharacter);
       }
     }
   }

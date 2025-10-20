@@ -15,23 +15,85 @@ class AIResponseDialog extends StatelessWidget {
       content: SizedBox(
         width: 700,
         child: SingleChildScrollView(
-          child: MarkdownBody(
-            data: response,
-            selectable: true,
-            styleSheet: MarkdownStyleSheet(
-              p: Theme.of(context).textTheme.bodyLarge,
-              h1: Theme.of(context).textTheme.headlineMedium,
-              h2: Theme.of(context).textTheme.titleLarge,
-              h3: Theme.of(context).textTheme.titleMedium,
-              code: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontFamily: 'monospace',
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest,
-              ),
-              codeblockDecoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
+          child: DefaultTextStyle(
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            child: MarkdownBody(
+              data: response,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet(
+                p: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                h1: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                h2: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                h3: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                h4: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                h5: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                h6: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                em: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontStyle: FontStyle.italic,
+                ),
+                strong: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                del: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  decoration: TextDecoration.lineThrough,
+                ),
+                a: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                ),
+                blockquote: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                blockquoteDecoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border(
+                    left: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 4,
+                    ),
+                  ),
+                ),
+                code: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontFamily: 'monospace',
+                  color: Theme.of(context).colorScheme.onSurface,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
+                ),
+                codeblockDecoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                listBullet: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                tableHead: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                tableBody: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           ),

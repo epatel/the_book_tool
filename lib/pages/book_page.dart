@@ -106,15 +106,6 @@ class _BookPageState extends State<BookPage> {
           context,
           listen: false,
         ).deleteChapter(chapter.id!);
-      } else {
-        final updatedChapter = chapter.copyWith(
-          title: result['title'] as String,
-          content: result['content'] as String,
-        );
-        await Provider.of<ChapterProvider>(
-          context,
-          listen: false,
-        ).updateChapter(updatedChapter);
       }
     }
   }
@@ -292,22 +283,18 @@ class _BookPageState extends State<BookPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          if (chapterLabel.isNotEmpty)
-                                            Row(
-                                              children: [
-                                                DSText.bodySmall(
-                                                  chapterLabel,
-                                                  style: TextStyle(
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
-                                                  ),
-                                                ),
-                                              ],
+                                          DSText.bodySmall(
+                                            chapterLabel,
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                             ),
-                                          if (chapterLabel.isNotEmpty)
-                                            const DSSpacing.spacing8(),
+                                          ),
+                                          const DSSpacing.spacing8(),
                                           Row(
                                             children: [
                                               DSText.titleMedium(

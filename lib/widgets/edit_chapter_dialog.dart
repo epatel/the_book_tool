@@ -542,12 +542,38 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                 label: 'Save',
                 onPressed: !_hasChanges
                     ? null
-                    : () {
+                    : () async {
                         if (_formKey.currentState!.validate()) {
-                          Navigator.of(context).pop({
-                            'title': _titleController.text,
-                            'content': _contentController.text,
+                          // Capture messenger before async operations
+                          final messenger = ScaffoldMessenger.of(context);
+
+                          // Save changes
+                          final chapterProvider = Provider.of<ChapterProvider>(
+                            context,
+                            listen: false,
+                          );
+                          final updatedChapter = widget.chapter.copyWith(
+                            title: _titleController.text,
+                            content: _contentController.text,
+                          );
+                          await chapterProvider.updateChapter(updatedChapter);
+
+                          // Update original values to mark as saved
+                          setState(() {
+                            _originalTitle = _titleController.text;
+                            _originalContent = _contentController.text;
+                            _hasChanges = false;
                           });
+
+                          // Show feedback
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Chapter saved'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
                         }
                       },
               ),

@@ -508,12 +508,41 @@ class _EditCharacterDialogState extends State<EditCharacterDialog> {
                 label: 'Save',
                 onPressed: !_hasChanges
                     ? null
-                    : () {
+                    : () async {
                         if (_formKey.currentState!.validate()) {
-                          Navigator.of(context).pop({
-                            'name': _nameController.text,
-                            'description': _descriptionController.text,
+                          // Capture messenger before async operations
+                          final messenger = ScaffoldMessenger.of(context);
+
+                          // Save changes
+                          final characterProvider =
+                              Provider.of<CharacterProvider>(
+                                context,
+                                listen: false,
+                              );
+                          final updatedCharacter = widget.character.copyWith(
+                            name: _nameController.text,
+                            description: _descriptionController.text,
+                          );
+                          await characterProvider.updateCharacter(
+                            updatedCharacter,
+                          );
+
+                          // Update original values to mark as saved
+                          setState(() {
+                            _originalName = _nameController.text;
+                            _originalDescription = _descriptionController.text;
+                            _hasChanges = false;
                           });
+
+                          // Show feedback
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Character saved'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
                         }
                       },
               ),

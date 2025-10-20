@@ -212,6 +212,15 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
       );
 
       await plotProvider.updatePlot(updatedPlot);
+
+      // Update original values to mark as saved
+      if (mounted) {
+        setState(() {
+          _originalTitle = _titleController.text;
+          _originalDescription = _descriptionController.text;
+          _hasChanges = false;
+        });
+      }
     }
 
     setState(() {
@@ -568,12 +577,38 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
                 label: 'Save',
                 onPressed: !_hasChanges
                     ? null
-                    : () {
+                    : () async {
                         if (_formKey.currentState!.validate()) {
-                          Navigator.of(context).pop({
-                            'title': _titleController.text,
-                            'description': _descriptionController.text,
+                          // Capture messenger before async operations
+                          final messenger = ScaffoldMessenger.of(context);
+
+                          // Save changes
+                          final plotProvider = Provider.of<PlotProvider>(
+                            context,
+                            listen: false,
+                          );
+                          final updatedPlot = widget.plot.copyWith(
+                            title: _titleController.text,
+                            description: _descriptionController.text,
+                          );
+                          await plotProvider.updatePlot(updatedPlot);
+
+                          // Update original values to mark as saved
+                          setState(() {
+                            _originalTitle = _titleController.text;
+                            _originalDescription = _descriptionController.text;
+                            _hasChanges = false;
                           });
+
+                          // Show feedback
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Plot saved'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
                         }
                       },
               ),

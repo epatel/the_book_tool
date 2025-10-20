@@ -37,6 +37,7 @@ export 'models/misc_note.dart';
 export 'models/prompt.dart';
 export 'models/ai_command.dart';
 export 'models/model_pricing.dart';
+export 'models/search_result.dart';
 
 // Services
 export 'services/database_service.dart';
@@ -48,6 +49,7 @@ export 'services/ai_service.dart';
 export 'services/ai_command_executor.dart';
 export 'services/pdf_service.dart';
 export 'services/tts_service.dart';
+export 'services/search_service.dart';
 
 // Repositories
 export 'repositories/manifest_repository.dart';
@@ -82,6 +84,7 @@ export 'widgets/settings_dialog.dart';
 export 'widgets/database_selection_dialog.dart';
 export 'widgets/text_selection_overlay.dart';
 export 'widgets/ai_response_dialog.dart';
+export 'widgets/search_bottom_sheet.dart';
 
 // Local files
 export 'app.dart';

@@ -84,15 +84,6 @@ class _MiscPageState extends State<MiscPage> {
           context,
           listen: false,
         ).deleteNote(note.id!);
-      } else {
-        final updatedNote = note.copyWith(
-          title: result['title'] as String,
-          content: result['content'] as String,
-        );
-        await Provider.of<MiscNoteProvider>(
-          context,
-          listen: false,
-        ).updateNote(updatedNote);
       }
     }
   }

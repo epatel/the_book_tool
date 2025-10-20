@@ -84,15 +84,6 @@ class _PlotsPageState extends State<PlotsPage> {
           context,
           listen: false,
         ).deletePlot(plot.id!);
-      } else {
-        final updatedPlot = plot.copyWith(
-          title: result['title'] as String,
-          description: result['description'] as String,
-        );
-        await Provider.of<PlotProvider>(
-          context,
-          listen: false,
-        ).updatePlot(updatedPlot);
       }
     }
   }
