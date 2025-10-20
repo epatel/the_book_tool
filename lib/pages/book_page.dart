@@ -282,129 +282,121 @@ class _BookPageState extends State<BookPage> {
                                 : null,
                             child: DSCard(
                               onTap: () => _showEditChapterDialog(chapter),
-                              child: Stack(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Column(
+                                  Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                      Column(
                                         children: [
-                                          Column(
-                                            children: [
-                                              if (chapterLabel.isNotEmpty)
-                                                Row(
-                                                  children: [
-                                                    DSText.bodySmall(
-                                                      chapterLabel,
-                                                      style: TextStyle(
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                      ),
-                                                    ),
-                                                  ],
+                                          if (chapterLabel.isNotEmpty)
+                                            Row(
+                                              children: [
+                                                DSText.bodySmall(
+                                                  chapterLabel,
+                                                  style: TextStyle(
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                  ),
                                                 ),
-                                              if (chapterLabel.isNotEmpty)
-                                                const DSSpacing.spacing8(),
-                                              Row(
-                                                children: [
-                                                  DSText.titleMedium(
-                                                    _filterNotForAiMarker(
-                                                      chapter.title,
+                                              ],
+                                            ),
+                                          if (chapterLabel.isNotEmpty)
+                                            const DSSpacing.spacing8(),
+                                          Row(
+                                            children: [
+                                              DSText.titleMedium(
+                                                _filterNotForAiMarker(
+                                                  chapter.title,
+                                                ),
+                                              ),
+                                              if (_shouldShowNotForAiBadge(
+                                                chapter.title,
+                                                chapter.content,
+                                              )) ...[
+                                                const SizedBox(width: 8),
+                                                Tooltip(
+                                                  message:
+                                                      'This content is excluded from AI requests',
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primaryContainer,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
+                                                          ),
+                                                    ),
+                                                    child: DSText.bodySmall(
+                                                      'Not for AI',
+                                                      style: TextStyle(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onPrimaryContainer,
+                                                      ),
                                                     ),
                                                   ),
-                                                  if (_shouldShowNotForAiBadge(
-                                                    chapter.title,
-                                                    chapter.content,
-                                                  )) ...[
-                                                    const SizedBox(width: 8),
-                                                    Tooltip(
-                                                      message:
-                                                          'This content is excluded from AI requests',
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 8,
-                                                              vertical: 4,
-                                                            ),
-                                                        decoration: BoxDecoration(
-                                                          color: Theme.of(context)
-                                                              .colorScheme
-                                                              .primaryContainer,
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                999,
-                                                              ),
-                                                        ),
-                                                        child: DSText.bodySmall(
-                                                          'Not for AI',
-                                                          style: TextStyle(
-                                                            color: Theme.of(context)
-                                                                .colorScheme
-                                                                .onPrimaryContainer,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                              const DSSpacing.spacing8(),
+                                                ),
+                                              ],
                                             ],
                                           ),
-                                          if (!ttsProvider.isPlaying &&
-                                              _hasTtsVoice)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                right: 8,
-                                              ),
-                                              child: IconButton(
-                                                icon: const Icon(
-                                                  Icons.play_circle_filled,
-                                                ),
-                                                iconSize: 40,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                                onPressed: () => _playChapter(
-                                                  chapter,
-                                                  index,
-                                                  provider.chapters,
-                                                ),
-                                                tooltip: 'Play',
-                                              ),
-                                            ),
+                                          const DSSpacing.spacing8(),
                                         ],
                                       ),
-                                      if (_markdownEnabled)
-                                        MarkdownBody(
-                                          data: chapter.content,
-                                          styleSheet: MarkdownStyleSheet(
-                                            p: _readingFont.getTextStyle(
-                                              fontSize: _fontSize,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
+                                      if (!ttsProvider.isPlaying &&
+                                          _hasTtsVoice)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.play_circle_filled,
                                           ),
-                                        )
-                                      else
-                                        Text(
-                                          chapter.content,
-                                          style: _readingFont.getTextStyle(
-                                            fontSize: _fontSize,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.7),
+                                          iconSize: 40,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          onPressed: () => _playChapter(
+                                            chapter,
+                                            index,
+                                            provider.chapters,
                                           ),
+                                          tooltip: 'Play',
                                         ),
                                     ],
                                   ),
+                                  if (_markdownEnabled)
+                                    MarkdownBody(
+                                      data: chapter.content,
+                                      styleSheet: MarkdownStyleSheet(
+                                        p: _readingFont.getTextStyle(
+                                          fontSize: _fontSize,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Text(
+                                      chapter.content,
+                                      style: _readingFont.getTextStyle(
+                                        fontSize: _fontSize,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
