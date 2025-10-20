@@ -74,7 +74,6 @@ export 'widgets/add_chapter_dialog.dart';
 export 'widgets/add_character_dialog.dart';
 export 'widgets/add_plot_dialog.dart';
 export 'widgets/add_misc_note_dialog.dart';
-export 'widgets/add_prompt_dialog.dart';
 export 'widgets/edit_chapter_dialog.dart';
 export 'widgets/edit_character_dialog.dart';
 export 'widgets/edit_plot_dialog.dart';

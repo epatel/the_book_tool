@@ -13,6 +13,7 @@ class SearchResult {
   final String matchingLine;
   final String lineBelow;
   final int lineNumber;
+  final String searchQuery;
 
   const SearchResult({
     required this.type,
@@ -22,6 +23,7 @@ class SearchResult {
     required this.matchingLine,
     required this.lineBelow,
     required this.lineNumber,
+    required this.searchQuery,
   });
 
   String get typeLabel {

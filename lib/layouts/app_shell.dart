@@ -358,39 +358,13 @@ class _AppShellState extends State<AppShell> {
                   padding: const EdgeInsets.all(AppTheme.spacing20),
                   color: Theme.of(context).colorScheme.primaryContainer,
                   width: double.infinity,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DSText.headlineSmall(
-                          'Writing Tool',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.search,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
-                        tooltip: 'Search',
-                        onPressed: _showSearchBottomSheet,
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.storage,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
-                        tooltip: 'Library',
-                        onPressed: _showDatabaseDialog,
-                      ),
-                    ],
+                  child: DSText.headlineSmall(
+                    'Writing Tool',
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -544,6 +518,16 @@ class _AppShellState extends State<AppShell> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.storage),
+                        tooltip: 'Library',
+                        onPressed: _showDatabaseDialog,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: 'Search',
+                        onPressed: _showSearchBottomSheet,
+                      ),
                       IconButton(
                         icon: const Icon(Icons.picture_as_pdf),
                         tooltip: 'Export to PDF',

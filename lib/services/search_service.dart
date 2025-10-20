@@ -31,6 +31,7 @@ class SearchService {
             matchingLine: chapter.title,
             lineBelow: chapter.content.split('\n').first,
             lineNumber: 0,
+            searchQuery: query,
           ),
         );
       }
@@ -62,6 +63,7 @@ class SearchService {
             matchingLine: character.name,
             lineBelow: character.description.split('\n').first,
             lineNumber: 0,
+            searchQuery: query,
           ),
         );
       }
@@ -93,6 +95,7 @@ class SearchService {
             matchingLine: plot.title,
             lineBelow: plot.description.split('\n').first,
             lineNumber: 0,
+            searchQuery: query,
           ),
         );
       }
@@ -124,6 +127,7 @@ class SearchService {
             matchingLine: note.title,
             lineBelow: note.content.split('\n').first,
             lineNumber: 0,
+            searchQuery: query,
           ),
         );
       }
@@ -164,6 +168,7 @@ class SearchService {
             matchingLine: lines[i],
             lineBelow: i < lines.length - 1 ? lines[i + 1] : '',
             lineNumber: i,
+            searchQuery: query,
           ),
         );
       }

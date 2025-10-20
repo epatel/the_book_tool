@@ -4,11 +4,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 class EditPlotDialog extends StatefulWidget {
   final Plot plot;
   final bool hasApiKey;
+  final String? searchQuery;
+  final int? searchLineNumber;
 
   const EditPlotDialog({
     super.key,
     required this.plot,
     this.hasApiKey = false,
+    this.searchQuery,
+    this.searchLineNumber,
   });
 
   @override
@@ -63,6 +67,69 @@ class _EditPlotDialogState extends State<EditPlotDialog> {
 
     // Load persisted AI prompt visibility
     _loadAiPromptPreference();
+
+    // If opened from search, select the matched text and scroll to it
+    if (widget.searchQuery != null && widget.searchLineNumber != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _selectAndScrollToMatch();
+      });
+    }
+  }
+
+  void _selectAndScrollToMatch() {
+    if (widget.searchQuery == null || widget.searchLineNumber == null) return;
+
+    final description = _descriptionController.text;
+    final lines = description.split('\n');
+    final lineNumber = widget.searchLineNumber!;
+
+    // Check if line number is valid
+    if (lineNumber >= lines.length) return;
+
+    // Calculate character position of the start of the target line
+    int charPosition = 0;
+    for (int i = 0; i < lineNumber; i++) {
+      charPosition += lines[i].length + 1; // +1 for newline
+    }
+
+    // Find the query within the target line (case-insensitive)
+    final targetLine = lines[lineNumber];
+    final queryLower = widget.searchQuery!.toLowerCase();
+    final lineLower = targetLine.toLowerCase();
+    final matchIndex = lineLower.indexOf(queryLower);
+
+    if (matchIndex != -1) {
+      final startPos = charPosition + matchIndex;
+      final endPos = startPos + widget.searchQuery!.length;
+
+      // Set selection
+      final selection = TextSelection(
+        baseOffset: startPos,
+        extentOffset: endPos,
+      );
+      _descriptionController.selection = selection;
+      _savedSelection = selection;
+
+      // Scroll to make it visible
+      // Estimate scroll position based on line number
+      final lineHeight = 24.0; // Approximate line height
+      final scrollPosition = lineNumber * lineHeight;
+      final scrollController = _descriptionScrollController;
+
+      if (scrollController.hasClients) {
+        scrollController.animateTo(
+          scrollPosition.clamp(
+            0.0,
+            scrollController.position.maxScrollExtent,
+          ),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+
+      // Focus the description field to show selection
+      _descriptionFocusNode.requestFocus();
+    }
   }
 
   Future<void> _loadAiPromptPreference() async {

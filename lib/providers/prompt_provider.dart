@@ -34,13 +34,31 @@ class PromptProvider extends ChangeNotifier {
       content: content,
       command: command,
       isTemplate: isTemplate,
-      orderIndex: _prompts.length,
+      orderIndex: 0, // Add at top
       createdAt: now,
       updatedAt: now,
     );
 
     try {
+      // Get existing prompts before inserting
+      final existingPrompts = List<Prompt>.from(_prompts);
+
+      // Insert the new prompt
       await _repository.insert(prompt);
+
+      // Reload to get the new prompt with its database ID
+      await loadPrompts();
+
+      // Find the newly inserted prompt (it will be first due to orderIndex 0)
+      final newPrompt = _prompts.first;
+
+      // Create reordered list: new prompt at top, then existing prompts
+      final reorderedPrompts = [newPrompt, ...existingPrompts];
+
+      // Update all orderIndex values
+      await _repository.reorder(reorderedPrompts);
+
+      // Final reload to get correct order
       await loadPrompts();
     } catch (e) {
       debugPrint('Error adding prompt: $e');

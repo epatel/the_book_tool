@@ -1,12 +1,12 @@
 import 'package:the_book_tool/index.dart';
 
 class EditPromptDialog extends StatefulWidget {
-  final Prompt prompt;
+  final Prompt? prompt;
   final bool hasApiKey;
 
   const EditPromptDialog({
     super.key,
-    required this.prompt,
+    this.prompt,
     required this.hasApiKey,
   });
 
@@ -27,19 +27,50 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
   bool _originalCommand = false;
   bool _originalIsTemplate = false;
 
+  // Computed properties for button states
+  bool get _hasBothFields =>
+      _titleController.text.trim().isNotEmpty &&
+      _contentController.text.trim().isNotEmpty;
+
+  bool get _canSend =>
+      _hasBothFields &&
+      !_command &&
+      !_isTemplate &&
+      widget.hasApiKey;
+
+  bool get _canSaveOrAdd => _hasChanges && _hasBothFields;
+
   @override
   void initState() {
     super.initState();
-    _originalTitle = widget.prompt.title;
-    _originalContent = widget.prompt.content;
-    _originalCommand = widget.prompt.command;
-    _originalIsTemplate = widget.prompt.isTemplate;
+    final prompt = widget.prompt;
 
-    _titleController = TextEditingController(text: widget.prompt.title);
-    _contentController = TextEditingController(text: widget.prompt.content);
-    _command = widget.prompt.command;
-    _isTemplate = widget.prompt.isTemplate;
-    _response = widget.prompt.response;
+    if (prompt != null) {
+      // Editing existing prompt
+      _originalTitle = prompt.title;
+      _originalContent = prompt.content;
+      _originalCommand = prompt.command;
+      _originalIsTemplate = prompt.isTemplate;
+
+      _titleController = TextEditingController(text: prompt.title);
+      _contentController = TextEditingController(text: prompt.content);
+      _command = prompt.command;
+      _isTemplate = prompt.isTemplate;
+      _response = prompt.response;
+    } else {
+      // Adding new prompt
+      _originalTitle = '';
+      _originalContent = '';
+      _originalCommand = false;
+      _originalIsTemplate = false;
+
+      _titleController = TextEditingController();
+      _contentController = TextEditingController();
+      _command = false;
+      _isTemplate = false;
+      _response = null;
+      // _hasChanges starts as false; button enables when user types
+    }
 
     // Listen to text changes to detect modifications
     _titleController.addListener(_checkForChanges);
@@ -53,11 +84,10 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
         _command != _originalCommand ||
         _isTemplate != _originalIsTemplate;
 
-    if (hasChanges != _hasChanges) {
-      setState(() {
-        _hasChanges = hasChanges;
-      });
-    }
+    // Always call setState to re-evaluate computed getters
+    setState(() {
+      _hasChanges = hasChanges;
+    });
   }
 
   void _onContentChange() {
@@ -144,7 +174,9 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
         }
       },
       child: AlertDialog(
-        title: const DSText.titleLarge('Edit Prompt'),
+        title: DSText.titleLarge(
+          widget.prompt == null ? 'Add Prompt' : 'Edit Prompt',
+        ),
         content: Form(
           key: _formKey,
           child: SizedBox(
@@ -249,12 +281,8 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
                           ),
                         IconButton(
                           icon: const Icon(Icons.send),
-                          onPressed:
-                              _contentController.text.isEmpty ||
-                                  _isTemplate ||
-                                  !widget.hasApiKey
-                              ? null
-                              : () {
+                          onPressed: _canSend
+                              ? () {
                                   if (_formKey.currentState!.validate()) {
                                     Navigator.of(context).pop({
                                       'title': _titleController.text,
@@ -265,7 +293,8 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
                                       'send': true,
                                     });
                                   }
-                                },
+                                }
+                              : null,
                           tooltip: 'Send',
                         ),
                       ],
@@ -279,10 +308,11 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
         actions: [
           Row(
             children: [
-              DSButton.text(label: 'Delete', onPressed: _confirmDelete),
+              if (widget.prompt != null)
+                DSButton.text(label: 'Delete', onPressed: _confirmDelete),
               const Spacer(),
               DSButton.text(
-                label: 'Close',
+                label: widget.prompt == null ? 'Cancel' : 'Close',
                 onPressed: () async {
                   final shouldClose = await _confirmDiscard();
                   if (shouldClose && context.mounted) {
@@ -291,10 +321,9 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
                 },
               ),
               DSButton.primary(
-                label: 'Save',
-                onPressed: !_hasChanges
-                    ? null
-                    : () {
+                label: widget.prompt == null ? 'Add' : 'Save',
+                onPressed: _canSaveOrAdd
+                    ? () {
                         if (_formKey.currentState!.validate()) {
                           Navigator.of(context).pop({
                             'title': _titleController.text,
@@ -304,7 +333,8 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
                             'isTemplate': _isTemplate,
                           });
                         }
-                      },
+                      }
+                    : null,
               ),
             ],
           ),

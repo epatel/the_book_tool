@@ -27,13 +27,31 @@ class MiscNoteProvider extends ChangeNotifier {
     final note = MiscNote(
       title: title,
       content: content,
-      orderIndex: _notes.length,
+      orderIndex: 0, // Add at top
       createdAt: now,
       updatedAt: now,
     );
 
     try {
+      // Get existing notes before inserting
+      final existingNotes = List<MiscNote>.from(_notes);
+
+      // Insert the new note
       await _repository.insert(note);
+
+      // Reload to get the new note with its database ID
+      await loadNotes();
+
+      // Find the newly inserted note (it will be first due to orderIndex 0)
+      final newNote = _notes.first;
+
+      // Create reordered list: new note at top, then existing notes
+      final reorderedNotes = [newNote, ...existingNotes];
+
+      // Update all orderIndex values
+      await _repository.reorder(reorderedNotes);
+
+      // Final reload to get correct order
       await loadNotes();
     } catch (e) {
       debugPrint('Error adding note: $e');

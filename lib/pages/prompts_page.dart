@@ -225,12 +225,21 @@ class _PromptsPageState extends State<PromptsPage> {
   }
 
   Future<void> _showAddPromptDialog() async {
+    // Check API key freshly before showing dialog
+    final apiKey = await _aiService.getApiKey();
+
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => const AddPromptDialog(),
+      builder: (dialogContext) => EditPromptDialog(
+        prompt: null, // null means "add new prompt"
+        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+      ),
     );
 
     if (result != null && mounted) {
+      // Add the prompt first
       await Provider.of<PromptProvider>(
         context,
         listen: false,
@@ -240,6 +249,19 @@ class _PromptsPageState extends State<PromptsPage> {
         command: result['command'] as bool,
         isTemplate: result['isTemplate'] as bool,
       );
+
+      // If send was requested, get the newly added prompt and send it
+      if (result['send'] == true && mounted) {
+        final promptProvider = Provider.of<PromptProvider>(
+          context,
+          listen: false,
+        );
+        // The newly added prompt should be first in the list
+        if (promptProvider.prompts.isNotEmpty) {
+          final newPrompt = promptProvider.prompts.first;
+          await _sendPromptToAI(newPrompt);
+        }
+      }
     }
   }
 

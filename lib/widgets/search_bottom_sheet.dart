@@ -70,7 +70,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
         final chapter = provider.chapters.firstWhere(
           (c) => c.id == result.itemId,
         );
-        await _showEditChapterDialog(chapter);
+        await _showEditChapterDialog(chapter, result);
         break;
 
       case SearchResultType.character:
@@ -81,13 +81,13 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
         final character = provider.characters.firstWhere(
           (c) => c.id == result.itemId,
         );
-        await _showEditCharacterDialog(character);
+        await _showEditCharacterDialog(character, result);
         break;
 
       case SearchResultType.plot:
         final provider = Provider.of<PlotProvider>(context, listen: false);
         final plot = provider.plots.firstWhere((p) => p.id == result.itemId);
-        await _showEditPlotDialog(plot);
+        await _showEditPlotDialog(plot, result);
         break;
 
       case SearchResultType.miscNote:
@@ -96,12 +96,15 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
           listen: false,
         );
         final note = provider.notes.firstWhere((n) => n.id == result.itemId);
-        await _showEditMiscNoteDialog(note);
+        await _showEditMiscNoteDialog(note, result);
         break;
     }
   }
 
-  Future<void> _showEditChapterDialog(Chapter chapter) async {
+  Future<void> _showEditChapterDialog(
+    Chapter chapter,
+    SearchResult result,
+  ) async {
     final aiService = AIService();
     final apiKey = await aiService.getApiKey();
 
@@ -112,11 +115,16 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       builder: (dialogContext) => EditChapterDialog(
         chapter: chapter,
         hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        searchQuery: result.searchQuery,
+        searchLineNumber: result.lineNumber,
       ),
     );
   }
 
-  Future<void> _showEditCharacterDialog(Character character) async {
+  Future<void> _showEditCharacterDialog(
+    Character character,
+    SearchResult result,
+  ) async {
     final aiService = AIService();
     final apiKey = await aiService.getApiKey();
 
@@ -127,11 +135,13 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       builder: (dialogContext) => EditCharacterDialog(
         character: character,
         hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        searchQuery: result.searchQuery,
+        searchLineNumber: result.lineNumber,
       ),
     );
   }
 
-  Future<void> _showEditPlotDialog(Plot plot) async {
+  Future<void> _showEditPlotDialog(Plot plot, SearchResult result) async {
     final aiService = AIService();
     final apiKey = await aiService.getApiKey();
 
@@ -142,11 +152,16 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       builder: (dialogContext) => EditPlotDialog(
         plot: plot,
         hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        searchQuery: result.searchQuery,
+        searchLineNumber: result.lineNumber,
       ),
     );
   }
 
-  Future<void> _showEditMiscNoteDialog(MiscNote note) async {
+  Future<void> _showEditMiscNoteDialog(
+    MiscNote note,
+    SearchResult result,
+  ) async {
     final aiService = AIService();
     final apiKey = await aiService.getApiKey();
 
@@ -157,6 +172,8 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       builder: (dialogContext) => EditMiscNoteDialog(
         note: note,
         hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        searchQuery: result.searchQuery,
+        searchLineNumber: result.lineNumber,
       ),
     );
   }

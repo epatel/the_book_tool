@@ -27,13 +27,31 @@ class PlotProvider extends ChangeNotifier {
     final plot = Plot(
       title: title,
       description: description,
-      orderIndex: _plots.length,
+      orderIndex: 0, // Add at top
       createdAt: now,
       updatedAt: now,
     );
 
     try {
+      // Get existing plots before inserting
+      final existingPlots = List<Plot>.from(_plots);
+
+      // Insert the new plot
       await _repository.insert(plot);
+
+      // Reload to get the new plot with its database ID
+      await loadPlots();
+
+      // Find the newly inserted plot (it will be first due to orderIndex 0)
+      final newPlot = _plots.first;
+
+      // Create reordered list: new plot at top, then existing plots
+      final reorderedPlots = [newPlot, ...existingPlots];
+
+      // Update all orderIndex values
+      await _repository.reorder(reorderedPlots);
+
+      // Final reload to get correct order
       await loadPlots();
     } catch (e) {
       debugPrint('Error adding plot: $e');
