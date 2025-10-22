@@ -38,9 +38,12 @@ class DatabaseManager {
     // Sort based on the sortBy parameter
     switch (sortBy) {
       case 'name':
-        entities.sort((a, b) => path.basename(a.path)
-            .toLowerCase()
-            .compareTo(path.basename(b.path).toLowerCase()));
+        entities.sort(
+          (a, b) => path
+              .basename(a.path)
+              .toLowerCase()
+              .compareTo(path.basename(b.path).toLowerCase()),
+        );
         break;
       case 'modified':
         // Sort by modification time, newest first
@@ -50,10 +53,15 @@ class DatabaseManager {
             return {'entity': e, 'modified': stat.modified};
           }),
         );
-        filesWithStats.sort((a, b) => (b['modified'] as DateTime)
-            .compareTo(a['modified'] as DateTime));
+        filesWithStats.sort(
+          (a, b) =>
+              (b['modified'] as DateTime).compareTo(a['modified'] as DateTime),
+        );
         return filesWithStats
-            .map((item) => path.basename((item['entity'] as FileSystemEntity).path))
+            .map(
+              (item) =>
+                  path.basename((item['entity'] as FileSystemEntity).path),
+            )
             .toList();
       case 'created':
         // Sort by modification time (creation not available), oldest first
@@ -63,10 +71,15 @@ class DatabaseManager {
             return {'entity': e, 'modified': stat.modified};
           }),
         );
-        filesWithStats.sort((a, b) => (a['modified'] as DateTime)
-            .compareTo(b['modified'] as DateTime));
+        filesWithStats.sort(
+          (a, b) =>
+              (a['modified'] as DateTime).compareTo(b['modified'] as DateTime),
+        );
         return filesWithStats
-            .map((item) => path.basename((item['entity'] as FileSystemEntity).path))
+            .map(
+              (item) =>
+                  path.basename((item['entity'] as FileSystemEntity).path),
+            )
             .toList();
     }
 

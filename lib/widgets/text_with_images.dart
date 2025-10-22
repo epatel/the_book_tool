@@ -73,7 +73,9 @@ class TextWithImages extends StatelessWidget {
 
     // Parse the text for markdown image syntax with surrounding newlines
     // Pattern captures optional leading/trailing newlines around the image tag
-    final pattern = RegExp(r'\n*!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)\n*');
+    final pattern = RegExp(
+      r'\n*!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)\n*',
+    );
     final matches = pattern.allMatches(text);
 
     if (matches.isEmpty) {

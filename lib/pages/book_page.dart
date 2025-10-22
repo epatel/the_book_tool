@@ -375,14 +375,14 @@ class _BookPageState extends State<BookPage> {
                                         code: TextStyle(
                                           fontFamily: 'JetBrainsMono',
                                           fontSize: _fontSize * 0.9,
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest,
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
                                         ),
                                         codeblockDecoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
                                           borderRadius: BorderRadius.circular(
                                             AppTheme.radiusSmall,
                                           ),
@@ -393,7 +393,9 @@ class _BookPageState extends State<BookPage> {
                                                 .withValues(alpha: 0.3),
                                           ),
                                         ),
-                                        codeblockPadding: const EdgeInsets.all(12),
+                                        codeblockPadding: const EdgeInsets.all(
+                                          12,
+                                        ),
                                       ),
                                       sizedImageBuilder: (config) =>
                                           MarkdownAssetImageBuilder(
@@ -547,14 +549,14 @@ class _BookPageState extends State<BookPage> {
                                         code: TextStyle(
                                           fontFamily: 'JetBrainsMono',
                                           fontSize: _fontSize * 0.9,
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest,
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
                                         ),
                                         codeblockDecoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
                                           borderRadius: BorderRadius.circular(
                                             AppTheme.radiusSmall,
                                           ),
@@ -565,7 +567,9 @@ class _BookPageState extends State<BookPage> {
                                                 .withValues(alpha: 0.3),
                                           ),
                                         ),
-                                        codeblockPadding: const EdgeInsets.all(12),
+                                        codeblockPadding: const EdgeInsets.all(
+                                          12,
+                                        ),
                                       ),
                                       sizedImageBuilder: (config) =>
                                           MarkdownAssetImageBuilder(

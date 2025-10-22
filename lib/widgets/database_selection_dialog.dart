@@ -27,7 +27,9 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
     });
 
     try {
-      final databases = await _databaseManager.listDatabaseFiles(sortBy: _sortBy);
+      final databases = await _databaseManager.listDatabaseFiles(
+        sortBy: _sortBy,
+      );
       final currentDb = await _databaseManager.getCurrentDatabaseName();
 
       if (mounted) {

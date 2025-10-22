@@ -675,7 +675,9 @@ class PdfService {
 
     // Parse the text for markdown image syntax with surrounding newlines
     // Pattern captures optional leading/trailing newlines around the image tag
-    final pattern = RegExp(r'\n*!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)\n*');
+    final pattern = RegExp(
+      r'\n*!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)\n*',
+    );
     final matches = pattern.allMatches(text);
 
     if (matches.isEmpty) {
@@ -895,7 +897,7 @@ class PdfService {
               ),
               pw.SizedBox(height: 20),
               pw.Text(
-                'by $author',
+                author,
                 textAlign: pw.TextAlign.center,
                 style: pw.TextStyle(
                   fontSize: 18,
