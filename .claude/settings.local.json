@@ -18,7 +18,8 @@
       "Bash(sqlite3:*)",
       "Bash(curl:*)",
       "Bash(unzip:*)",
-      "WebSearch"
+      "WebSearch",
+      "Read(//Users/epatel/Desktop/**)"
     ],
     "deny": [],
     "ask": []

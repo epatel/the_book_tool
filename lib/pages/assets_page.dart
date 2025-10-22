@@ -192,9 +192,21 @@ class _AssetsPageState extends State<AssetsPage> {
 
               // Filter for image files only
               final imageExtensions = [
-                'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp',
-                'svg', 'tiff', 'tif', 'ico', 'heic', 'heif'
+                'jpg',
+                'jpeg',
+                'png',
+                'gif',
+                'webp',
+                'bmp',
+                'svg',
+                'tiff',
+                'tif',
+                'ico',
+                'heic',
+                'heif',
               ];
+
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
 
               int skippedFiles = 0;
               for (final file in details.files) {
@@ -208,7 +220,7 @@ class _AssetsPageState extends State<AssetsPage> {
 
               // Show message if non-image files were dropped
               if (skippedFiles > 0 && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(
                       'Skipped $skippedFiles non-image file${skippedFiles > 1 ? 's' : ''}. Only images are allowed.',

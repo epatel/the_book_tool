@@ -405,8 +405,8 @@ class _BookPageState extends State<BookPage> {
                                           ),
                                     )
                                   else
-                                    Text(
-                                      chapter.content,
+                                    TextWithImages(
+                                      text: chapter.content,
                                       style: _readingFont.getTextStyle(
                                         fontSize: _fontSize,
                                         color: Theme.of(context)

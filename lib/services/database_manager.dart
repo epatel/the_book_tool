@@ -22,7 +22,7 @@ class DatabaseManager {
     return path.join(documentsDirectory.path, databaseName);
   }
 
-  Future<List<String>> listDatabaseFiles() async {
+  Future<List<String>> listDatabaseFiles({String sortBy = 'name'}) async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final directory = Directory(documentsDirectory.path);
 
@@ -30,13 +30,47 @@ class DatabaseManager {
       return [];
     }
 
-    final files = await directory
+    final entities = await directory
         .list()
         .where((entity) => entity is File && entity.path.endsWith('.db'))
-        .map((entity) => path.basename(entity.path))
         .toList();
 
-    return files;
+    // Sort based on the sortBy parameter
+    switch (sortBy) {
+      case 'name':
+        entities.sort((a, b) => path.basename(a.path)
+            .toLowerCase()
+            .compareTo(path.basename(b.path).toLowerCase()));
+        break;
+      case 'modified':
+        // Sort by modification time, newest first
+        final filesWithStats = await Future.wait(
+          entities.map((e) async {
+            final stat = await (e as File).stat();
+            return {'entity': e, 'modified': stat.modified};
+          }),
+        );
+        filesWithStats.sort((a, b) => (b['modified'] as DateTime)
+            .compareTo(a['modified'] as DateTime));
+        return filesWithStats
+            .map((item) => path.basename((item['entity'] as FileSystemEntity).path))
+            .toList();
+      case 'created':
+        // Sort by modification time (creation not available), oldest first
+        final filesWithStats = await Future.wait(
+          entities.map((e) async {
+            final stat = await (e as File).stat();
+            return {'entity': e, 'modified': stat.modified};
+          }),
+        );
+        filesWithStats.sort((a, b) => (a['modified'] as DateTime)
+            .compareTo(b['modified'] as DateTime));
+        return filesWithStats
+            .map((item) => path.basename((item['entity'] as FileSystemEntity).path))
+            .toList();
+    }
+
+    return entities.map((entity) => path.basename(entity.path)).toList();
   }
 
   Future<bool> databaseExists(String databaseName) async {

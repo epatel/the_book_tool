@@ -210,9 +210,11 @@ class PdfService {
                         children: [imageChild],
                       );
 
-                      widgets.add(pw.SizedBox(height: 8));
+                      widgets.add(pw.SizedBox(height: Sizes.imageTopSpacing));
                       widgets.add(imageWidget);
-                      widgets.add(pw.SizedBox(height: 8));
+                      widgets.add(
+                        pw.SizedBox(height: Sizes.imageBottomSpacing),
+                      );
                     }
                   } catch (e) {
                     debugPrint('Failed to load asset for PDF: $src - $e');
@@ -472,9 +474,9 @@ class PdfService {
                   children: [imageChild],
                 );
 
-                widgets.add(pw.SizedBox(height: 8));
+                widgets.add(pw.SizedBox(height: Sizes.imageTopSpacing));
                 widgets.add(imageWidget);
-                widgets.add(pw.SizedBox(height: 8));
+                widgets.add(pw.SizedBox(height: Sizes.imageBottomSpacing));
               }
             } catch (e) {
               // Asset not found or error - skip image silently
@@ -663,6 +665,132 @@ class PdfService {
     return '';
   }
 
+  /// Parse plain text with markdown image syntax and return PDF widgets
+  Future<List<pw.Widget>> _parseTextWithImages({
+    required String text,
+    required pw.Font font,
+    required double fontSize,
+  }) async {
+    final widgets = <pw.Widget>[];
+
+    // Parse the text for markdown image syntax with surrounding newlines
+    // Pattern captures optional leading/trailing newlines around the image tag
+    final pattern = RegExp(r'\n*!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]+)")?\)\n*');
+    final matches = pattern.allMatches(text);
+
+    if (matches.isEmpty) {
+      // No images found, return plain text
+      widgets.add(
+        pw.Paragraph(
+          text: text,
+          style: pw.TextStyle(
+            fontSize: fontSize,
+            font: font,
+            lineSpacing: 1.5,
+          ),
+        ),
+      );
+      return widgets;
+    }
+
+    int lastEnd = 0;
+    final availableWidth = PdfPageFormat.a4.width - 80;
+
+    for (final match in matches) {
+      // Add text before the image
+      if (match.start > lastEnd) {
+        final textBefore = text.substring(lastEnd, match.start);
+        if (textBefore.trim().isNotEmpty) {
+          widgets.add(
+            pw.Paragraph(
+              text: textBefore,
+              style: pw.TextStyle(
+                fontSize: fontSize,
+                font: font,
+                lineSpacing: 1.5,
+              ),
+            ),
+          );
+        }
+      }
+
+      // Extract image components
+      final alias = match.group(2)!;
+      final title = match.group(3);
+
+      // Try to load and add the image
+      try {
+        final asset = await _assetService.getAssetByAlias(alias);
+        if (asset != null && asset.isImage) {
+          final spec = _parseImageTitle(title);
+          final image = pw.MemoryImage(asset.fileData);
+
+          // Calculate width if specified
+          final double? imageWidth = spec.widthPercent != null
+              ? availableWidth * (spec.widthPercent! / 100)
+              : null;
+
+          // Determine alignment
+          final pw.MainAxisAlignment rowAlignment;
+          if (spec.alignment == -1.0) {
+            rowAlignment = pw.MainAxisAlignment.start; // left
+          } else if (spec.alignment == 1.0) {
+            rowAlignment = pw.MainAxisAlignment.end; // right
+          } else {
+            rowAlignment = pw.MainAxisAlignment.center;
+          }
+
+          // Create image widget
+          final pw.Widget imageChild;
+          if (imageWidth != null) {
+            imageChild = pw.Container(
+              width: imageWidth,
+              constraints: const pw.BoxConstraints(maxHeight: 700),
+              child: pw.Image(image, fit: pw.BoxFit.contain),
+            );
+          } else {
+            imageChild = pw.Container(
+              constraints: const pw.BoxConstraints(maxHeight: 700),
+              child: pw.Image(image, fit: pw.BoxFit.contain),
+            );
+          }
+
+          final imageWidget = pw.Row(
+            mainAxisAlignment: rowAlignment,
+            children: [imageChild],
+          );
+
+          widgets.add(pw.SizedBox(height: Sizes.imageTopSpacing));
+          widgets.add(imageWidget);
+          widgets.add(pw.SizedBox(height: Sizes.imageBottomSpacing));
+        }
+      } catch (e) {
+        debugPrint('Failed to load asset for PDF: $alias - $e');
+      }
+
+      lastEnd = match.end;
+    }
+
+    // Add remaining text after the last image
+    if (lastEnd < text.length) {
+      final textAfter = text.substring(lastEnd);
+      if (textAfter.trim().isNotEmpty) {
+        widgets.add(
+          pw.Paragraph(
+            text: textAfter,
+            style: pw.TextStyle(
+              fontSize: fontSize,
+              font: font,
+              lineSpacing: 1.5,
+            ),
+          ),
+        );
+      }
+    }
+
+    return widgets;
+  }
+
   /// Load a font with Unicode support from bundled assets
   Future<pw.Font?> _loadUnicodeFont({
     required ReadingFont readingFont,
@@ -794,7 +922,7 @@ class PdfService {
                 ? i
                 : i + 1);
 
-      // Pre-process markdown if enabled
+      // Pre-process markdown if enabled, or parse image tags in plain text
       List<pw.Widget> contentWidgets;
       if (markdownEnabled) {
         contentWidgets = await _markdownToPdfWidgets(
@@ -806,16 +934,12 @@ class PdfService {
           fontSize: fontSize,
         );
       } else {
-        contentWidgets = [
-          pw.Paragraph(
-            text: chapter.content,
-            style: pw.TextStyle(
-              fontSize: fontSize,
-              font: pdfRegularFont,
-              lineSpacing: 1.5,
-            ),
-          ),
-        ];
+        // Parse plain text for image tags
+        contentWidgets = await _parseTextWithImages(
+          text: chapter.content,
+          font: pdfRegularFont,
+          fontSize: fontSize,
+        );
       }
 
       pdf.addPage(
@@ -861,7 +985,6 @@ class PdfService {
     // Generate PDF bytes
     return await pdf.save();
   }
-
 
   /// Save PDF bytes to file (shows save dialog)
   Future<void> savePdfToFile({

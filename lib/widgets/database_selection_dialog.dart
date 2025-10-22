@@ -13,6 +13,7 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
   List<String> _databases = [];
   String _currentDatabase = '';
   bool _isLoading = true;
+  String _sortBy = 'modified';
 
   @override
   void initState() {
@@ -26,7 +27,7 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
     });
 
     try {
-      final databases = await _databaseManager.listDatabaseFiles();
+      final databases = await _databaseManager.listDatabaseFiles(sortBy: _sortBy);
       final currentDb = await _databaseManager.getCurrentDatabaseName();
 
       if (mounted) {
@@ -238,13 +239,32 @@ class _DatabaseSelectionDialogState extends State<DatabaseSelectionDialog> {
                 children: [
                   Row(
                     children: [
-                      const DSText.bodyMedium('Current: '),
+                      const DSText.bodyMedium('Sort by: '),
                       SizedBox(width: AppTheme.spacing8),
-                      Expanded(
-                        child: DSText.bodyMedium(
-                          _currentDatabase,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                      DropdownButton<String>(
+                        value: _sortBy,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'name',
+                            child: Text('Name'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'modified',
+                            child: Text('Recently Modified'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'created',
+                            child: Text('Oldest First'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _sortBy = value;
+                            });
+                            _loadDatabases();
+                          }
+                        },
                       ),
                     ],
                   ),
