@@ -253,6 +253,82 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
     }
   }
 
+  Future<void> _insertImageTag() async {
+    final assetProvider = Provider.of<AssetProvider>(context, listen: false);
+    final assets = assetProvider.assets;
+
+    if (assets.isEmpty) return;
+
+    // Show dialog to select asset
+    final selectedAsset = await showDialog<Asset>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const DSText.titleLarge('Select Image'),
+        content: SizedBox(
+          width: 400,
+          height: 400,
+          child: ListView.builder(
+            itemCount: assets.length,
+            itemBuilder: (context, index) {
+              final asset = assets[index];
+              return ListTile(
+                leading: asset.hasThumbnail
+                    ? Image.memory(
+                        asset.thumbnail!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      )
+                    : Icon(
+                        Icons.image,
+                        size: 40,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.5),
+                      ),
+                title: DSText.bodyMedium(asset.alias),
+                subtitle: DSText.bodySmall(asset.filename),
+                onTap: () => Navigator.of(dialogContext).pop(asset),
+              );
+            },
+          ),
+        ),
+        actions: [
+          DSButton.text(
+            label: 'Cancel',
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedAsset != null && mounted) {
+      // Insert markdown image tag at cursor/selection
+      final selection = _contentController.selection;
+      final content = _contentController.text;
+      final imageTag = '![](${selectedAsset.alias})';
+
+      setState(() {
+        final newText = content.replaceRange(
+          selection.start,
+          selection.end,
+          imageTag,
+        );
+        _contentController.text = newText;
+
+        // Place cursor after the inserted tag
+        final newCursorPos = selection.start + imageTag.length;
+        final newSelection = TextSelection.collapsed(offset: newCursorPos);
+        _contentController.selection = newSelection;
+        _savedSelection = newSelection;
+      });
+
+      // Focus the content field
+      _contentFocusNode.requestFocus();
+    }
+  }
+
   Future<void> _sendAiPrompt() async {
     if (_aiPromptController.text.isEmpty) return;
 
@@ -594,6 +670,18 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                 tooltip: widget.hasApiKey
                     ? 'AI Assistant'
                     : 'AI Assistant (API key required)',
+              ),
+              Consumer<AssetProvider>(
+                builder: (context, assetProvider, child) {
+                  final hasAssets = assetProvider.assets.isNotEmpty;
+                  return IconButton(
+                    icon: const Icon(Icons.add_photo_alternate),
+                    onPressed: hasAssets ? _insertImageTag : null,
+                    tooltip: hasAssets
+                        ? 'Insert Image'
+                        : 'Insert Image (no assets available)',
+                  );
+                },
               ),
               const Spacer(),
               DSButton.text(
