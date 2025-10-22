@@ -13,7 +13,9 @@
       "Bash(for file in lib/pages/*.dart lib/widgets/*.dart)",
       "Bash(do)",
       "Bash(git checkout:*)",
-      "Bash(perl:*)"
+      "Bash(perl:*)",
+      "Read(//Users/epatel/Downloads/**)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

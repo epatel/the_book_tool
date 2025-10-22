@@ -6,15 +6,72 @@ import 'package:the_book_tool/index.dart';
 import 'package:markdown/markdown.dart' as md;
 
 class PdfService {
+  final AssetService _assetService = AssetService();
+
+  /// Parse image title for width and alignment specifications
+  _PdfImageSpec _parseImageTitle(String? title) {
+    if (title == null || title.isEmpty) {
+      return _PdfImageSpec();
+    }
+
+    double? widthPercent;
+    double alignment = 0.0; // -1.0 left, 0.0 center, 1.0 right
+
+    // Parse width parameter
+    final widthMatch = RegExp(r'width=([^\s]+)').firstMatch(title);
+    if (widthMatch != null) {
+      final widthValue = widthMatch.group(1)!;
+
+      if (widthValue.endsWith('%')) {
+        // Percentage: "50%" -> 50.0
+        final percent = double.tryParse(widthValue.replaceAll('%', ''));
+        if (percent != null && percent > 0 && percent <= 100) {
+          widthPercent = percent;
+        }
+      } else if (widthValue == 'small') {
+        widthPercent = 25.0;
+      } else if (widthValue == 'medium') {
+        widthPercent = 50.0;
+      } else if (widthValue == 'large') {
+        widthPercent = 75.0;
+      } else {
+        // Try parsing as decimal fraction: "0.5" -> 50.0
+        final fraction = double.tryParse(widthValue);
+        if (fraction != null && fraction > 0 && fraction <= 1) {
+          widthPercent = fraction * 100;
+        }
+      }
+    }
+
+    // Parse align parameter
+    final alignMatch = RegExp(r'align=([^\s]+)').firstMatch(title);
+    if (alignMatch != null) {
+      final alignValue = alignMatch.group(1)!.toLowerCase();
+      switch (alignValue) {
+        case 'left':
+          alignment = -1.0;
+          break;
+        case 'right':
+          alignment = 1.0;
+          break;
+        case 'center':
+          alignment = 0.0;
+          break;
+      }
+    }
+
+    return _PdfImageSpec(widthPercent: widthPercent, alignment: alignment);
+  }
+
   /// Convert markdown text to PDF widgets
-  List<pw.Widget> _markdownToPdfWidgets({
+  Future<List<pw.Widget>> _markdownToPdfWidgets({
     required String markdownText,
     required pw.Font regularFont,
     required pw.Font boldFont,
     required pw.Font italicFont,
     required pw.Font boldItalicFont,
     required double fontSize,
-  }) {
+  }) async {
     // Parse markdown to AST
     final document = md.Document(
       encodeHtml: false,
@@ -26,7 +83,7 @@ class PdfService {
 
     for (final node in nodes) {
       widgets.addAll(
-        _convertNodeToWidgets(
+        await _convertNodeToWidgets(
           node,
           regularFont: regularFont,
           boldFont: boldFont,
@@ -41,14 +98,14 @@ class PdfService {
   }
 
   /// Convert a markdown node to PDF widgets
-  List<pw.Widget> _convertNodeToWidgets(
+  Future<List<pw.Widget>> _convertNodeToWidgets(
     md.Node node, {
     required pw.Font regularFont,
     required pw.Font boldFont,
     required pw.Font italicFont,
     required pw.Font boldItalicFont,
     required double fontSize,
-  }) {
+  }) async {
     final widgets = <pw.Widget>[];
 
     if (node is md.Element) {
@@ -96,19 +153,105 @@ class PdfService {
           break;
 
         case 'p':
-          widgets.add(
-            pw.RichText(
-              text: _buildTextSpan(
-                node,
-                regularFont: regularFont,
-                boldFont: boldFont,
-                italicFont: italicFont,
-                boldItalicFont: boldItalicFont,
-                fontSize: fontSize,
+          // Check if paragraph contains images
+          final hasImages = _containsImages(node);
+
+          if (hasImages) {
+            // Process paragraph with images
+            for (final child in node.children ?? []) {
+              if (child is md.Element && child.tag == 'img') {
+                // Render image as block element
+                final src = child.attributes['src'] ?? '';
+                final title = child.attributes['title'];
+
+                if (src.isNotEmpty) {
+                  try {
+                    final asset = await _assetService.getAssetByAlias(src);
+                    if (asset != null && asset.isImage) {
+                      final spec = _parseImageTitle(title);
+                      final image = pw.MemoryImage(asset.fileData);
+                      final availableWidth = PdfPageFormat.a4.width - 80;
+
+                      // Calculate width if specified
+                      final double? imageWidth = spec.widthPercent != null
+                          ? availableWidth * (spec.widthPercent! / 100)
+                          : null;
+
+                      // Determine alignment
+                      final pw.MainAxisAlignment rowAlignment;
+                      if (spec.alignment == -1.0) {
+                        rowAlignment = pw.MainAxisAlignment.start; // left
+                      } else if (spec.alignment == 1.0) {
+                        rowAlignment = pw.MainAxisAlignment.end; // right
+                      } else {
+                        rowAlignment = pw.MainAxisAlignment.center;
+                      }
+
+                      // Create image with alignment using TEST 6 approach
+                      // TEST 6: Row + Container(width) + Image(fit: contain)
+                      final pw.Widget imageChild;
+                      if (imageWidth != null) {
+                        // Width specified - use Container wrapper like TEST 6
+                        imageChild = pw.Container(
+                          width: imageWidth,
+                          constraints: const pw.BoxConstraints(maxHeight: 700),
+                          child: pw.Image(image, fit: pw.BoxFit.contain),
+                        );
+                      } else {
+                        // No width specified - constrain height only
+                        imageChild = pw.Container(
+                          constraints: const pw.BoxConstraints(maxHeight: 700),
+                          child: pw.Image(image, fit: pw.BoxFit.contain),
+                        );
+                      }
+
+                      final imageWidget = pw.Row(
+                        mainAxisAlignment: rowAlignment,
+                        children: [imageChild],
+                      );
+
+                      widgets.add(pw.SizedBox(height: 8));
+                      widgets.add(imageWidget);
+                      widgets.add(pw.SizedBox(height: 8));
+                    }
+                  } catch (e) {
+                    debugPrint('Failed to load asset for PDF: $src - $e');
+                  }
+                }
+              } else {
+                // Render text content
+                final textSpan = _buildTextSpan(
+                  child,
+                  regularFont: regularFont,
+                  boldFont: boldFont,
+                  italicFont: italicFont,
+                  boldItalicFont: boldItalicFont,
+                  fontSize: fontSize,
+                );
+                // Only add non-empty text
+                if (textSpan.text?.isNotEmpty == true ||
+                    textSpan.children?.isNotEmpty == true) {
+                  widgets.add(pw.RichText(text: textSpan));
+                }
+              }
+            }
+            widgets.add(pw.SizedBox(height: fontSize * 0.8));
+          } else {
+            // Normal paragraph without images
+            widgets.add(
+              pw.RichText(
+                text: _buildTextSpan(
+                  node,
+                  regularFont: regularFont,
+                  boldFont: boldFont,
+                  italicFont: italicFont,
+                  boldItalicFont: boldItalicFont,
+                  fontSize: fontSize,
+                ),
               ),
-            ),
-          );
-          widgets.add(pw.SizedBox(height: fontSize * 0.8));
+            );
+            widgets.add(pw.SizedBox(height: fontSize * 0.8));
+          }
           break;
 
         case 'ul':
@@ -190,6 +333,19 @@ class PdfService {
           break;
 
         case 'blockquote':
+          final blockquoteWidgets = <pw.Widget>[];
+          for (final child in node.children ?? []) {
+            blockquoteWidgets.addAll(
+              await _convertNodeToWidgets(
+                child,
+                regularFont: regularFont,
+                boldFont: boldFont,
+                italicFont: italicFont,
+                boldItalicFont: boldItalicFont,
+                fontSize: fontSize,
+              ),
+            );
+          }
           widgets.add(
             pw.Container(
               margin: const pw.EdgeInsets.symmetric(vertical: 8),
@@ -204,20 +360,7 @@ class PdfService {
               ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children:
-                    node.children
-                        ?.expand(
-                          (child) => _convertNodeToWidgets(
-                            child,
-                            regularFont: regularFont,
-                            boldFont: boldFont,
-                            italicFont: italicFont,
-                            boldItalicFont: boldItalicFont,
-                            fontSize: fontSize,
-                          ),
-                        )
-                        .toList() ??
-                    [],
+                children: blockquoteWidgets,
               ),
             ),
           );
@@ -232,12 +375,22 @@ class PdfService {
         case 'code':
           // Inline code
           widgets.add(
-            pw.Text(
-              _extractText(node),
-              style: pw.TextStyle(
-                font: regularFont,
-                fontSize: fontSize * 0.9,
-                color: PdfColors.grey800,
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 2,
+              ),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey200,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(2)),
+              ),
+              child: pw.Text(
+                _extractText(node),
+                style: pw.TextStyle(
+                  font: pw.Font.courier(),
+                  fontSize: fontSize * 0.9,
+                  color: PdfColors.grey900,
+                ),
               ),
             ),
           );
@@ -252,23 +405,142 @@ class PdfService {
               decoration: pw.BoxDecoration(
                 color: PdfColors.grey200,
                 borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                border: pw.Border.all(color: PdfColors.grey400),
               ),
+              width: double.infinity,
               child: pw.Text(
                 _extractText(node),
                 style: pw.TextStyle(
-                  font: regularFont,
-                  fontSize: fontSize * 0.9,
+                  font: pw.Font.courier(),
+                  fontSize: fontSize * 0.85,
+                  color: PdfColors.grey900,
+                  lineSpacing: 1.3,
                 ),
               ),
             ),
           );
           break;
 
+        case 'img':
+          // Handle images from assets (standalone, not in paragraphs)
+          final src = node.attributes['src'] ?? '';
+          final title = node.attributes['title'];
+
+          if (src.isNotEmpty) {
+            try {
+              final asset = await _assetService.getAssetByAlias(src);
+              if (asset != null && asset.isImage) {
+                final spec = _parseImageTitle(title);
+                final image = pw.MemoryImage(asset.fileData);
+                final availableWidth = PdfPageFormat.a4.width - 80;
+
+                // Calculate width if specified
+                final double? imageWidth = spec.widthPercent != null
+                    ? availableWidth * (spec.widthPercent! / 100)
+                    : null;
+
+                // Determine alignment
+                final pw.MainAxisAlignment rowAlignment;
+                if (spec.alignment == -1.0) {
+                  rowAlignment = pw.MainAxisAlignment.start; // left
+                } else if (spec.alignment == 1.0) {
+                  rowAlignment = pw.MainAxisAlignment.end; // right
+                } else {
+                  rowAlignment = pw.MainAxisAlignment.center;
+                }
+
+                // Create image with alignment using TEST 6 approach
+                // TEST 6: Row + Container(width) + Image(fit: contain)
+                final pw.Widget imageChild;
+                if (imageWidth != null) {
+                  // Width specified - use Container wrapper like TEST 6
+                  imageChild = pw.Container(
+                    width: imageWidth,
+                    constraints: const pw.BoxConstraints(maxHeight: 700),
+                    child: pw.Image(image, fit: pw.BoxFit.contain),
+                  );
+                } else {
+                  // No width specified - constrain height only
+                  imageChild = pw.Container(
+                    constraints: const pw.BoxConstraints(maxHeight: 700),
+                    child: pw.Image(image, fit: pw.BoxFit.contain),
+                  );
+                }
+
+                final imageWidget = pw.Row(
+                  mainAxisAlignment: rowAlignment,
+                  children: [imageChild],
+                );
+
+                widgets.add(pw.SizedBox(height: 8));
+                widgets.add(imageWidget);
+                widgets.add(pw.SizedBox(height: 8));
+              }
+            } catch (e) {
+              // Asset not found or error - skip image silently
+              debugPrint('Failed to load asset for PDF: $src - $e');
+            }
+          }
+          break;
+
+        case 'table':
+          // Handle tables
+          final rows = <List<String>>[];
+
+          // Process table rows
+          for (final child in node.children ?? []) {
+            if (child is md.Element &&
+                (child.tag == 'thead' || child.tag == 'tbody')) {
+              for (final row in child.children ?? []) {
+                if (row is md.Element && row.tag == 'tr') {
+                  final cells = <String>[];
+                  for (final cell in row.children ?? []) {
+                    if (cell is md.Element &&
+                        (cell.tag == 'th' || cell.tag == 'td')) {
+                      cells.add(_extractText(cell));
+                    }
+                  }
+                  if (cells.isNotEmpty) {
+                    rows.add(cells);
+                  }
+                }
+              }
+            }
+          }
+
+          if (rows.isNotEmpty) {
+            widgets.add(pw.SizedBox(height: 8));
+            widgets.add(
+              pw.TableHelper.fromTextArray(
+                border: pw.TableBorder.all(color: PdfColors.grey400),
+                headerStyle: pw.TextStyle(
+                  font: boldFont,
+                  fontSize: fontSize,
+                ),
+                cellStyle: pw.TextStyle(
+                  font: regularFont,
+                  fontSize: fontSize,
+                ),
+                headerDecoration: pw.BoxDecoration(
+                  color: PdfColors.grey200,
+                ),
+                cellHeight: fontSize * 2,
+                cellAlignments: {
+                  for (var i = 0; i < rows.first.length; i++)
+                    i: pw.Alignment.centerLeft,
+                },
+                data: rows,
+              ),
+            );
+            widgets.add(pw.SizedBox(height: 8));
+          }
+          break;
+
         default:
           // For other elements, recursively process children
           for (final child in node.children ?? []) {
             widgets.addAll(
-              _convertNodeToWidgets(
+              await _convertNodeToWidgets(
                 child,
                 regularFont: regularFont,
                 boldFont: boldFont,
@@ -302,6 +574,8 @@ class PdfService {
     required double fontSize,
     bool isBold = false,
     bool isItalic = false,
+    bool isStrikethrough = false,
+    bool isLink = false,
   }) {
     if (node is md.Text) {
       // Select the appropriate font based on bold/italic combination
@@ -316,11 +590,25 @@ class PdfService {
         selectedFont = regularFont;
       }
 
+      pw.TextDecoration? decoration;
+      if (isStrikethrough && isLink) {
+        decoration = pw.TextDecoration.combine([
+          pw.TextDecoration.lineThrough,
+          pw.TextDecoration.underline,
+        ]);
+      } else if (isStrikethrough) {
+        decoration = pw.TextDecoration.lineThrough;
+      } else if (isLink) {
+        decoration = pw.TextDecoration.underline;
+      }
+
       return pw.TextSpan(
         text: node.text,
         style: pw.TextStyle(
           font: selectedFont,
           fontSize: fontSize,
+          decoration: decoration,
+          color: isLink ? PdfColors.blue700 : null,
         ),
       );
     } else if (node is md.Element) {
@@ -329,6 +617,8 @@ class PdfService {
       for (final child in node.children ?? []) {
         final childBold = isBold || node.tag == 'strong' || node.tag == 'b';
         final childItalic = isItalic || node.tag == 'em' || node.tag == 'i';
+        final childStrikethrough = isStrikethrough || node.tag == 'del';
+        final childLink = isLink || node.tag == 'a';
         children.add(
           _buildTextSpan(
             child,
@@ -339,6 +629,8 @@ class PdfService {
             fontSize: fontSize,
             isBold: childBold,
             isItalic: childItalic,
+            isStrikethrough: childStrikethrough,
+            isLink: childLink,
           ),
         );
       }
@@ -347,6 +639,18 @@ class PdfService {
     }
 
     return pw.TextSpan(text: '');
+  }
+
+  /// Check if a node contains image children
+  bool _containsImages(md.Node node) {
+    if (node is md.Element) {
+      for (final child in node.children ?? []) {
+        if (child is md.Element && child.tag == 'img') {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /// Extract plain text from a markdown node
@@ -490,6 +794,30 @@ class PdfService {
                 ? i
                 : i + 1);
 
+      // Pre-process markdown if enabled
+      List<pw.Widget> contentWidgets;
+      if (markdownEnabled) {
+        contentWidgets = await _markdownToPdfWidgets(
+          markdownText: chapter.content,
+          regularFont: pdfRegularFont,
+          boldFont: pdfBoldFont,
+          italicFont: pdfItalicFont,
+          boldItalicFont: pdfBoldItalicFont,
+          fontSize: fontSize,
+        );
+      } else {
+        contentWidgets = [
+          pw.Paragraph(
+            text: chapter.content,
+            style: pw.TextStyle(
+              fontSize: fontSize,
+              font: pdfRegularFont,
+              lineSpacing: 1.5,
+            ),
+          ),
+        ];
+      }
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
@@ -522,25 +850,8 @@ class PdfService {
                   ],
                 ),
               ),
-              // Render chapter content with or without markdown formatting
-              if (markdownEnabled)
-                ...(_markdownToPdfWidgets(
-                  markdownText: chapter.content,
-                  regularFont: pdfRegularFont,
-                  boldFont: pdfBoldFont,
-                  italicFont: pdfItalicFont,
-                  boldItalicFont: pdfBoldItalicFont,
-                  fontSize: fontSize,
-                ))
-              else
-                pw.Paragraph(
-                  text: chapter.content,
-                  style: pw.TextStyle(
-                    fontSize: fontSize,
-                    font: pdfRegularFont,
-                    lineSpacing: 1.5,
-                  ),
-                ),
+              // Render chapter content
+              ...contentWidgets,
             ];
           },
         ),
@@ -550,6 +861,7 @@ class PdfService {
     // Generate PDF bytes
     return await pdf.save();
   }
+
 
   /// Save PDF bytes to file (shows save dialog)
   Future<void> savePdfToFile({
@@ -580,4 +892,15 @@ class PdfService {
       throw Exception('PDF export was cancelled by user');
     }
   }
+}
+
+/// Helper class to hold parsed image specifications for PDF
+class _PdfImageSpec {
+  final double? widthPercent; // 0.0 to 100.0 for percentage widths
+  final double alignment; // -1.0 left, 0.0 center, 1.0 right
+
+  _PdfImageSpec({
+    this.widthPercent,
+    this.alignment = 0.0,
+  });
 }
