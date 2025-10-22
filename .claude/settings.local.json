@@ -15,7 +15,10 @@
       "Bash(git checkout:*)",
       "Bash(perl:*)",
       "Read(//Users/epatel/Downloads/**)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

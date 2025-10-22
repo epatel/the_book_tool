@@ -62,6 +62,11 @@ flutter:
   - assets/images/OpenAI-black-monoblossom.svg
   - assets/images/OpenAI-white-monoblossom.svg
 
+  fonts:
+  - family: JetBrainsMono
+    fonts:
+    - asset: assets/fonts/JetBrainsMono-Regular.ttf
+
 # dart run icons_launcher:create
 icons_launcher:
   image_path: 'assets/icon_1024.png'

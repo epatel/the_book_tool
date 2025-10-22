@@ -363,6 +363,7 @@ class _BookPageState extends State<BookPage> {
                                   if (_markdownEnabled)
                                     MarkdownBody(
                                       data: chapter.content,
+                                      fitContent: false,
                                       styleSheet: MarkdownStyleSheet(
                                         p: _readingFont.getTextStyle(
                                           fontSize: _fontSize,
@@ -371,6 +372,28 @@ class _BookPageState extends State<BookPage> {
                                               .onSurface
                                               .withValues(alpha: 0.7),
                                         ),
+                                        code: TextStyle(
+                                          fontFamily: 'JetBrainsMono',
+                                          fontSize: _fontSize * 0.9,
+                                          backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                        ),
+                                        codeblockDecoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            AppTheme.radiusSmall,
+                                          ),
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        codeblockPadding: const EdgeInsets.all(12),
                                       ),
                                       sizedImageBuilder: (config) =>
                                           MarkdownAssetImageBuilder(
@@ -512,6 +535,7 @@ class _BookPageState extends State<BookPage> {
                                         const NeverScrollableScrollPhysics(),
                                     child: MarkdownBody(
                                       data: chapter.content,
+                                      fitContent: false,
                                       styleSheet: MarkdownStyleSheet(
                                         p: _readingFont.getTextStyle(
                                           fontSize: _fontSize,
@@ -520,6 +544,28 @@ class _BookPageState extends State<BookPage> {
                                               .onSurface
                                               .withValues(alpha: 0.7),
                                         ),
+                                        code: TextStyle(
+                                          fontFamily: 'JetBrainsMono',
+                                          fontSize: _fontSize * 0.9,
+                                          backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                        ),
+                                        codeblockDecoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            AppTheme.radiusSmall,
+                                          ),
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        codeblockPadding: const EdgeInsets.all(12),
                                       ),
                                       sizedImageBuilder: (config) =>
                                           MarkdownAssetImageBuilder(
