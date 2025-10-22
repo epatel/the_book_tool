@@ -39,27 +39,9 @@ class _AssetsPageState extends State<AssetsPage> {
       ],
     );
 
-    const XTypeGroup documentGroup = XTypeGroup(
-      label: 'Documents',
-      extensions: ['pdf', 'doc', 'docx', 'txt', 'rtf', 'md'],
-    );
-
-    const XTypeGroup audioGroup = XTypeGroup(
-      label: 'Audio',
-      extensions: ['mp3', 'wav', 'ogg', 'm4a', 'flac'],
-    );
-
-    const XTypeGroup videoGroup = XTypeGroup(
-      label: 'Video',
-      extensions: ['mp4', 'mov', 'avi', 'webm', 'mkv'],
-    );
-
     final XFile? file = await openFile(
       acceptedTypeGroups: [
         imageGroup,
-        documentGroup,
-        audioGroup,
-        videoGroup,
       ],
     );
 
@@ -208,8 +190,32 @@ class _AssetsPageState extends State<AssetsPage> {
                 _isDragging = false;
               });
 
+              // Filter for image files only
+              final imageExtensions = [
+                'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp',
+                'svg', 'tiff', 'tif', 'ico', 'heic', 'heif'
+              ];
+
+              int skippedFiles = 0;
               for (final file in details.files) {
-                await _addFile(file);
+                final extension = file.name.split('.').last.toLowerCase();
+                if (imageExtensions.contains(extension)) {
+                  await _addFile(file);
+                } else {
+                  skippedFiles++;
+                }
+              }
+
+              // Show message if non-image files were dropped
+              if (skippedFiles > 0 && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Skipped $skippedFiles non-image file${skippedFiles > 1 ? 's' : ''}. Only images are allowed.',
+                    ),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
               }
             },
             child: Stack(
@@ -243,7 +249,7 @@ class _AssetsPageState extends State<AssetsPage> {
                             ),
                             const DSSpacing.spacing8(),
                             DSText.bodySmall(
-                              'Drag and drop files here or tap the + button',
+                              'Drag and drop images here or tap the + button',
                               style: TextStyle(
                                 color: Theme.of(
                                   context,
@@ -396,7 +402,7 @@ class _AssetsPageState extends State<AssetsPage> {
                             ),
                             const DSSpacing.spacing16(),
                             DSText.titleLarge(
-                              'Drop files here',
+                              'Drop images here',
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
