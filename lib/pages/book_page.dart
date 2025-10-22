@@ -372,6 +372,14 @@ class _BookPageState extends State<BookPage> {
                                               .withValues(alpha: 0.7),
                                         ),
                                       ),
+                                      sizedImageBuilder: (config) =>
+                                          MarkdownAssetImageBuilder(
+                                            uri: config.uri,
+                                            title: config.title,
+                                            altText: config.alt,
+                                            width: config.width,
+                                            height: config.height,
+                                          ),
                                     )
                                   else
                                     Text(
@@ -513,6 +521,14 @@ class _BookPageState extends State<BookPage> {
                                               .withValues(alpha: 0.7),
                                         ),
                                       ),
+                                      sizedImageBuilder: (config) =>
+                                          MarkdownAssetImageBuilder(
+                                            uri: config.uri,
+                                            title: config.title,
+                                            altText: config.alt,
+                                            width: config.width,
+                                            height: config.height,
+                                          ),
                                     ),
                                   ),
                                   Positioned(

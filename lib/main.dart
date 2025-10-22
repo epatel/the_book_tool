@@ -25,6 +25,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PlotProvider()),
         ChangeNotifierProvider(create: (_) => MiscNoteProvider()),
         ChangeNotifierProvider(create: (_) => PromptProvider()),
+        ChangeNotifierProvider(create: (_) => AssetProvider()),
         ChangeNotifierProvider(create: (_) => TtsProvider()),
         ChangeNotifierProvider(create: (_) => AIUsageProvider()),
       ],

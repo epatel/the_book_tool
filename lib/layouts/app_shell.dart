@@ -50,6 +50,10 @@ class _AppShellState extends State<AppShell> {
         context,
         listen: false,
       ).addListener(_onDataChanged);
+      Provider.of<AssetProvider>(
+        context,
+        listen: false,
+      ).addListener(_onDataChanged);
 
       // Load prompts so they're available for templates throughout the app
       Provider.of<PromptProvider>(
@@ -134,6 +138,10 @@ class _AppShellState extends State<AppShell> {
       context,
       listen: false,
     ).removeListener(_onDataChanged);
+    Provider.of<AssetProvider>(
+      context,
+      listen: false,
+    ).removeListener(_onDataChanged);
     super.dispose();
   }
 
@@ -169,6 +177,7 @@ class _AppShellState extends State<AppShell> {
           Provider.of<PlotProvider>(context, listen: false).loadPlots(),
           Provider.of<MiscNoteProvider>(context, listen: false).loadNotes(),
           Provider.of<PromptProvider>(context, listen: false).loadPrompts(),
+          Provider.of<AssetProvider>(context, listen: false).loadAssets(),
           Provider.of<AIUsageProvider>(context, listen: false).loadUsage(),
         ]);
         // Trigger update of counts
@@ -411,6 +420,14 @@ class _AppShellState extends State<AppShell> {
                         path: '/prompts',
                         currentPath: widget.currentPath,
                         countFuture: DatabaseService.numberOfPrompts(),
+                      ),
+                      _NavItem(
+                        key: ValueKey('assets_$_updateCounter'),
+                        icon: Icons.image,
+                        title: 'Assets',
+                        path: '/assets',
+                        currentPath: widget.currentPath,
+                        countFuture: DatabaseService.numberOfAssets(),
                       ),
                     ],
                   ),

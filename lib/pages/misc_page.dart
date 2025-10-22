@@ -221,6 +221,14 @@ class _MiscPageState extends State<MiscPage> {
                             if (_markdownEnabled)
                               MarkdownBody(
                                 data: note.content,
+                                sizedImageBuilder: (config) =>
+                                    MarkdownAssetImageBuilder(
+                                      uri: config.uri,
+                                      title: config.title,
+                                      altText: config.alt,
+                                      width: config.width,
+                                      height: config.height,
+                                    ),
                                 styleSheet: MarkdownStyleSheet(
                                   p: _readingFont.getTextStyle(
                                     fontSize: _fontSize,
@@ -336,6 +344,14 @@ class _MiscPageState extends State<MiscPage> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 child: MarkdownBody(
                                   data: note.content,
+                                  sizedImageBuilder: (config) =>
+                                      MarkdownAssetImageBuilder(
+                                        uri: config.uri,
+                                        title: config.title,
+                                        altText: config.alt,
+                                        width: config.width,
+                                        height: config.height,
+                                      ),
                                   styleSheet: MarkdownStyleSheet(
                                     p: _readingFont.getTextStyle(
                                       fontSize: _fontSize,

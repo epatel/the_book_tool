@@ -222,6 +222,14 @@ class _PlotsPageState extends State<PlotsPage> {
                             if (_markdownEnabled)
                               MarkdownBody(
                                 data: plot.description,
+                                sizedImageBuilder: (config) =>
+                                    MarkdownAssetImageBuilder(
+                                      uri: config.uri,
+                                      title: config.title,
+                                      altText: config.alt,
+                                      width: config.width,
+                                      height: config.height,
+                                    ),
                                 styleSheet: MarkdownStyleSheet(
                                   p: _readingFont.getTextStyle(
                                     fontSize: _fontSize,
@@ -337,6 +345,14 @@ class _PlotsPageState extends State<PlotsPage> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 child: MarkdownBody(
                                   data: plot.description,
+                                  sizedImageBuilder: (config) =>
+                                      MarkdownAssetImageBuilder(
+                                        uri: config.uri,
+                                        title: config.title,
+                                        altText: config.alt,
+                                        width: config.width,
+                                        height: config.height,
+                                      ),
                                   styleSheet: MarkdownStyleSheet(
                                     p: _readingFont.getTextStyle(
                                       fontSize: _fontSize,

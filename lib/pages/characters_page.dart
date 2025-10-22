@@ -231,6 +231,14 @@ class _CharactersPageState extends State<CharactersPage> {
                                         .withValues(alpha: 0.7),
                                   ),
                                 ),
+                                sizedImageBuilder: (config) =>
+                                    MarkdownAssetImageBuilder(
+                                      uri: config.uri,
+                                      title: config.title,
+                                      altText: config.alt,
+                                      width: config.width,
+                                      height: config.height,
+                                    ),
                               )
                             else
                               Text(
@@ -348,6 +356,14 @@ class _CharactersPageState extends State<CharactersPage> {
                                           .withValues(alpha: 0.7),
                                     ),
                                   ),
+                                  sizedImageBuilder: (config) =>
+                                      MarkdownAssetImageBuilder(
+                                        uri: config.uri,
+                                        title: config.title,
+                                        altText: config.alt,
+                                        width: config.width,
+                                        height: config.height,
+                                      ),
                                 ),
                               ),
                             )

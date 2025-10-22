@@ -112,6 +112,42 @@ class DatabaseService {
       // If has both command and response, no migration needed
     }
 
+    // Check and create assets table
+    final assetsTables = await db.query(
+      'sqlite_master',
+      where: 'type = ? AND name = ?',
+      whereArgs: ['table', 'assets'],
+    );
+
+    if (assetsTables.isEmpty) {
+      await db.execute('''
+        CREATE TABLE assets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          filename TEXT NOT NULL,
+          alias TEXT NOT NULL,
+          mime_type TEXT NOT NULL,
+          file_data BLOB NOT NULL,
+          file_size INTEGER NOT NULL,
+          order_index INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          thumbnail BLOB
+        )
+      ''');
+      debugPrint('Created assets table');
+    } else {
+      // Check if thumbnail column exists
+      final assetsTableInfo = await db.rawQuery('PRAGMA table_info(assets)');
+      final assetsColumnNames = assetsTableInfo
+          .map((col) => col['name'] as String)
+          .toSet();
+
+      if (!assetsColumnNames.contains('thumbnail')) {
+        await db.execute('ALTER TABLE assets ADD COLUMN thumbnail BLOB');
+        debugPrint('Added thumbnail column to assets table');
+      }
+    }
+
     // Gracefully add new manifest keys if they don't exist
     await _ensureManifestKeys(db);
   }
@@ -264,6 +300,22 @@ class DatabaseService {
     // Populate default prompts
     await _insertDefaultPrompts(db);
 
+    // Create assets table
+    await db.execute('''
+      CREATE TABLE assets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT NOT NULL,
+        alias TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        file_data BLOB NOT NULL,
+        file_size INTEGER NOT NULL,
+        order_index INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        thumbnail BLOB
+      )
+    ''');
+
     // Populate welcome note
     await _insertWelcomeNote(db);
   }
@@ -376,6 +428,42 @@ AI-powered writing prompts to help you:
 ## Settings
 Configure your book's title, author name, AI API key, theme, reading preferences, and text-to-speech voice.
 
+## Assets
+Upload and manage images and other files that you can reference in your chapters. Upload images in the Assets section and reference them using markdown:
+
+```
+![Description](asset_alias)
+```
+
+For example, if you upload an image with alias "hero_portrait", you can add it to a chapter with:
+
+```
+![The hero](hero_portrait)
+```
+
+### Image Width Control
+You can control the width of images using the title parameter:
+
+```
+![Description](asset_alias "width=50%")        # 50% of available width
+![Description](asset_alias "width=300px")      # Fixed 300 pixels
+![Description](asset_alias "width=0.5")        # Fraction (50%)
+![Description](asset_alias "width=small")      # 25% width
+![Description](asset_alias "width=medium")     # 50% width
+![Description](asset_alias "width=large")      # 75% width
+```
+
+### Image Alignment
+Combine width with alignment (left, center, right):
+
+```
+![Description](asset_alias "width=50% align=center")
+![Description](asset_alias "width=300px align=left")
+![Description](asset_alias "width=medium align=right")
+```
+
+Default alignment is center when width is specified.
+
 ## Library
 Create and switch between multiple book projects using the Library icon (storage icon) in the sidebar.
 
@@ -383,6 +471,7 @@ Create and switch between multiple book projects using the Library icon (storage
 - All your data is stored locally on your computer
 - Use markdown formatting for rich text (enable in Settings)
 - Select text in chapters and use AI prompts for assistance
+- Reference uploaded images in your chapters with `![description](alias)` syntax
 - Export your finished book to PDF
 - Add `{not-for-ai}` to any title or content to exclude it from AI requests (useful for private notes or work-in-progress content)
 
@@ -455,6 +544,15 @@ Happy writing!''';
     // Select COUNT(*) from prompts
     final count = await db
         .query('prompts', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
+
+  static Future<int> numberOfAssets() async {
+    final db = await database;
+    // Select COUNT(*) from assets
+    final count = await db
+        .query('assets', columns: ['COUNT(*)'])
         .then((value) => value.first['COUNT(*)']);
     return count as int;
   }

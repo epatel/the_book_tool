@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:the_book_tool/index.dart';
 import 'package:markdown/markdown.dart' as md;

@@ -22,6 +22,13 @@ class AIResponseDialog extends StatelessWidget {
             child: MarkdownBody(
               data: response,
               selectable: true,
+              sizedImageBuilder: (config) => MarkdownAssetImageBuilder(
+                uri: config.uri,
+                title: config.title,
+                altText: config.alt,
+                width: config.width,
+                height: config.height,
+              ),
               styleSheet: MarkdownStyleSheet(
                 p: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,

@@ -32,11 +32,7 @@ class _EditPromptDialogState extends State<EditPromptDialog> {
       _titleController.text.trim().isNotEmpty &&
       _contentController.text.trim().isNotEmpty;
 
-  bool get _canSend =>
-      _hasBothFields &&
-      !_command &&
-      !_isTemplate &&
-      widget.hasApiKey;
+  bool get _canSend => _hasBothFields && !_isTemplate && widget.hasApiKey;
 
   bool get _canSaveOrAdd => _hasChanges && _hasBothFields;
 

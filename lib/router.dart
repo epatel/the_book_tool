@@ -35,6 +35,11 @@ final router = GoRouter(
           pageBuilder: (context, state) =>
               NoTransitionPage(key: state.pageKey, child: const PromptsPage()),
         ),
+        GoRoute(
+          path: '/assets',
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const AssetsPage()),
+        ),
       ],
     ),
   ],
