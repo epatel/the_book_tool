@@ -1,6 +1,10 @@
 import 'package:the_book_tool/index.dart';
 
+// Global key to force page rebuilds when settings change
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final router = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/book',
   routes: [
     ShellRoute(

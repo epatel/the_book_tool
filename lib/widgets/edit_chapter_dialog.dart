@@ -255,6 +255,12 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
 
   Future<void> _insertImageTag() async {
     final assetProvider = Provider.of<AssetProvider>(context, listen: false);
+
+    // Load assets to ensure we have the current list
+    await assetProvider.loadAssets();
+
+    if (!mounted) return;
+
     final assets = assetProvider.assets;
 
     if (assets.isEmpty) return;
@@ -282,10 +288,9 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
                     : Icon(
                         Icons.image,
                         size: 40,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                 title: DSText.bodyMedium(asset.alias),
                 subtitle: DSText.bodySmall(asset.filename),

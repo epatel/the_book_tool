@@ -1,13 +1,16 @@
 import 'package:the_book_tool/index.dart';
 
+// Global notifier to signal settings changes
+final ValueNotifier<int> settingsChangeNotifier = ValueNotifier<int>(0);
+
 class BookPage extends StatefulWidget {
   const BookPage({super.key});
 
   @override
-  State<BookPage> createState() => _BookPageState();
+  State<BookPage> createState() => BookPageState();
 }
 
-class _BookPageState extends State<BookPage> {
+class BookPageState extends State<BookPage> {
   final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
   bool _markdownEnabled = false;
@@ -25,6 +28,19 @@ class _BookPageState extends State<BookPage> {
       _loadSettings();
       _checkTtsAvailability();
     });
+
+    // Listen to settings changes
+    settingsChangeNotifier.addListener(_onSettingsChanged);
+  }
+
+  void _onSettingsChanged() {
+    _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    settingsChangeNotifier.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -38,6 +54,11 @@ class _BookPageState extends State<BookPage> {
         _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
       });
     }
+  }
+
+  // Public method to reload settings from external callers
+  Future<void> reloadSettings() async {
+    await _loadSettings();
   }
 
   Future<void> _checkTtsAvailability() async {

@@ -196,6 +196,7 @@ class _AppShellState extends State<AppShell> {
 
   Future<void> _showSettingsDialog() async {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final oldMarkdownEnabled = _markdownEnabled;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -213,10 +214,12 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (result != null && mounted) {
+      final newMarkdownEnabled = result['markdown'] as bool;
+
       await _manifestRepository.setMultiple({
         'Name': result['name'] as String,
         'Author': result['author'] as String,
-        'Markdown': (result['markdown'] as bool).toString(),
+        'Markdown': newMarkdownEnabled.toString(),
         'ContextPrompt': result['contextPrompt'] as String,
         'ReadingFont': (result['readingFont'] as ReadingFont).name,
         'FontSize': (result['fontSize'] as double).toString(),
@@ -232,6 +235,12 @@ class _AppShellState extends State<AppShell> {
       }
 
       await _loadSettings();
+
+      // If markdown setting changed, notify BookPage to reload
+      if (oldMarkdownEnabled != newMarkdownEnabled && mounted) {
+        // Increment the notifier to trigger listeners
+        settingsChangeNotifier.value++;
+      }
     }
   }
 
