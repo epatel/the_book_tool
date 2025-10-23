@@ -222,15 +222,6 @@ class _CharactersPageState extends State<CharactersPage> {
                             if (_markdownEnabled)
                               MarkdownBody(
                                 data: character.description,
-                                styleSheet: MarkdownStyleSheet(
-                                  p: _readingFont.getTextStyle(
-                                    fontSize: _fontSize,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
-                                  ),
-                                ),
                                 sizedImageBuilder: (config) =>
                                     MarkdownAssetImageBuilder(
                                       uri: config.uri,
@@ -239,6 +230,37 @@ class _CharactersPageState extends State<CharactersPage> {
                                       width: config.width,
                                       height: config.height,
                                     ),
+                                styleSheet: MarkdownStyleSheet(
+                                  p: _readingFont.getTextStyle(
+                                    fontSize: _fontSize,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                  code: TextStyle(
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: _fontSize * 0.9,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  codeblockDecoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusSmall,
+                                    ),
+                                    border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  codeblockPadding: const EdgeInsets.all(12),
+                                ),
                               )
                             else
                               Text(
@@ -347,6 +369,14 @@ class _CharactersPageState extends State<CharactersPage> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 child: MarkdownBody(
                                   data: character.description,
+                                  sizedImageBuilder: (config) =>
+                                      MarkdownAssetImageBuilder(
+                                        uri: config.uri,
+                                        title: config.title,
+                                        altText: config.alt,
+                                        width: config.width,
+                                        height: config.height,
+                                      ),
                                   styleSheet: MarkdownStyleSheet(
                                     p: _readingFont.getTextStyle(
                                       fontSize: _fontSize,
@@ -356,14 +386,6 @@ class _CharactersPageState extends State<CharactersPage> {
                                           .withValues(alpha: 0.7),
                                     ),
                                   ),
-                                  sizedImageBuilder: (config) =>
-                                      MarkdownAssetImageBuilder(
-                                        uri: config.uri,
-                                        title: config.title,
-                                        altText: config.alt,
-                                        width: config.width,
-                                        height: config.height,
-                                      ),
                                 ),
                               ),
                             )

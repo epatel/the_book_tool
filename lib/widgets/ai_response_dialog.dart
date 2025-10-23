@@ -95,7 +95,6 @@ class AIResponseDialog extends StatelessWidget {
                 listBullet: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
-                blockSpacing: Sizes.blockTopSpacing,
                 tableHead: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,

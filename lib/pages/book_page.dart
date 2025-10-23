@@ -417,7 +417,6 @@ class BookPageState extends State<BookPage> {
                                         codeblockPadding: const EdgeInsets.all(
                                           12,
                                         ),
-                                        blockSpacing: Sizes.blockTopSpacing,
                                       ),
                                       sizedImageBuilder: (config) =>
                                           MarkdownAssetImageBuilder(
@@ -592,7 +591,6 @@ class BookPageState extends State<BookPage> {
                                         codeblockPadding: const EdgeInsets.all(
                                           12,
                                         ),
-                                        blockSpacing: Sizes.blockTopSpacing,
                                       ),
                                       sizedImageBuilder: (config) =>
                                           MarkdownAssetImageBuilder(

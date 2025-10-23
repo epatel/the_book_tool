@@ -237,6 +237,28 @@ class _MiscPageState extends State<MiscPage> {
                                         .onSurface
                                         .withValues(alpha: 0.7),
                                   ),
+                                  code: TextStyle(
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: _fontSize * 0.9,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  codeblockDecoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusSmall,
+                                    ),
+                                    border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  codeblockPadding: const EdgeInsets.all(12),
                                 ),
                               )
                             else
