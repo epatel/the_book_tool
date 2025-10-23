@@ -316,8 +316,10 @@ class DatabaseService {
       )
     ''');
 
-    // Populate welcome note
+    // Populate initial notes
     await _insertWelcomeNote(db);
+    await _insertImageGuideNote(db);
+    await _insertAdvancedFeaturesNote(db);
   }
 
   static Future<void> insertDefaultPrompts() async {
@@ -398,84 +400,40 @@ class DatabaseService {
   static Future<void> _insertWelcomeNote(Database db) async {
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    final welcomeContent = '''Welcome to The Book Tool!
+    final welcomeContent = '''# Welcome to The Book Tool! 📚
 
-This application is designed to help you write and organize your book. Here's a quick guide to get you started:
+Your new book project is ready. Here's how to get started:
 
-## Chapters
-Write and organize your book chapters. You can:
-- Reorder chapters by dragging them
-- Expand all chapters to see full content
-- Use text-to-speech to listen to your chapters (configure in Settings)
+## Quick Start
 
-## Characters
-Keep track of your characters and their descriptions. This helps maintain consistency throughout your book.
+1. **Chapters** - Write your book content here (this is where you'll spend most of your time)
+2. **Characters** - Track character details to maintain consistency
+3. **Plots** - Organize story arcs and plot threads
+4. **Notes** - Store research, ideas, and other notes (you're reading one now!)
+5. **Prompts** - AI-powered writing assistance
+6. **Assets** - Upload images to reference in chapters: `![Description](alias)`
 
-## Plots
-Organize plot points, story arcs, and narrative threads. Use this section to plan and track your story's structure.
+## Your First Steps
 
-## Notes
-This section! Use notes for general ideas, research, world-building details, or anything else that doesn't fit in the other categories.
-
-## Prompts
-AI-powered writing prompts to help you:
-- Expand scenes with more detail
-- Add dialogue and character interactions
-- Describe settings vividly
-- Continue writing when you're stuck
-- Use command mode prompts to generate structured content
-
-## Settings
-Configure your book's title, author name, AI API key, theme, reading preferences, and text-to-speech voice.
-
-## Assets
-Upload and manage images and other files that you can reference in your chapters. Upload images in the Assets section and reference them using markdown:
-
-```
-![Description](asset_alias)
-```
-
-For example, if you upload an image with alias "hero_portrait", you can add it to a chapter with:
-
-```
-![The hero](hero_portrait)
-```
-
-### Image Width Control
-You can control the width of images using the title parameter:
-
-```
-![Description](asset_alias "width=50%")        # 50% of available width
-![Description](asset_alias "width=300px")      # Fixed 300 pixels
-![Description](asset_alias "width=0.5")        # Fraction (50%)
-![Description](asset_alias "width=small")      # 25% width
-![Description](asset_alias "width=medium")     # 50% width
-![Description](asset_alias "width=large")      # 75% width
-```
-
-### Image Alignment
-Combine width with alignment (left, center, right):
-
-```
-![Description](asset_alias "width=50% align=center")
-![Description](asset_alias "width=300px align=left")
-![Description](asset_alias "width=medium align=right")
-```
-
-Default alignment is center when width is specified.
-
-## Library
-Create and switch between multiple book projects using the Library icon (storage icon) in the sidebar.
+- ✏️ Add your first chapter in the Chapters section
+- 📝 Update the book title in Settings
+- 🎨 Choose your preferred theme (light/dark) in Settings
 
 ## Tips
-- All your data is stored locally on your computer
-- Use markdown formatting for rich text (enable in Settings)
-- Select text in chapters and use AI prompts for assistance
-- Reference uploaded images in your chapters with `![description](alias)` syntax
-- Export your finished book to PDF
-- Add `{not-for-ai}` to any title or content to exclude it from AI requests (useful for private notes or work-in-progress content)
 
-Happy writing!''';
+- All data is stored locally on your computer
+- Use markdown formatting for rich text (enabled by default)
+- Select text and use AI prompts for writing assistance
+- Add `{not-for-ai}` to exclude content from AI requests
+- Export your book to PDF when ready
+
+## Need Help?
+
+Check the other notes in this section for:
+- 🖼️ "Image Reference Guide" - How to use uploaded images
+- ⚡ "Advanced Features" - AI command mode, TTS, and more
+
+Happy writing! 🚀''';
 
     await db.insert('misc_notes', {
       'title': 'Getting Started',
@@ -486,6 +444,217 @@ Happy writing!''';
     });
 
     debugPrint('Inserted welcome note');
+  }
+
+  static Future<void> _insertImageGuideNote(Database db) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final imageGuideContent = '''# Image Reference Guide 🖼️
+
+Learn how to upload and use images in your chapters.
+
+## Uploading Images
+
+1. Go to the **Assets** section
+2. Click the + button or drag & drop image files
+3. Crop and resize the image as needed
+4. Choose output format (JPG or PNG)
+5. Enter a unique alias (e.g., "hero_portrait", "castle_exterior")
+
+## Basic Image Syntax
+
+Reference uploaded images in your chapters using markdown:
+
+```
+![Description](alias)
+```
+
+**Example:**
+If you upload an image with alias "hero_portrait", use:
+
+```
+![The hero standing tall](hero_portrait)
+```
+
+## Controlling Image Width
+
+Add width specifications using the title parameter:
+
+```
+![Description](alias "width=50%")        # 50% of available width
+![Description](alias "width=300px")      # Fixed 300 pixels
+![Description](alias "width=0.5")        # Fraction (50%)
+```
+
+### Named Width Presets
+
+Use convenient preset names:
+
+```
+![Description](alias "width=small")      # 25% width
+![Description](alias "width=medium")     # 50% width
+![Description](alias "width=large")      # 75% width
+![Description](alias "width=full")       # 100% width
+```
+
+## Image Alignment
+
+Control where images appear on the page:
+
+```
+![Description](alias "width=50% align=left")
+![Description](alias "width=50% align=center")
+![Description](alias "width=50% align=right")
+```
+
+**Note:** Default alignment is center when width is specified.
+
+## Examples
+
+```
+![A mysterious forest](forest "width=large align=center")
+![Character portrait](hero "width=small align=left")
+![Full-width banner](banner "width=full")
+```
+
+## Tips
+
+- Use descriptive aliases (e.g., "chapter3_sunset" instead of "img1")
+- JPG is smaller for photos, PNG preserves transparency
+- Resize images before uploading to reduce file size
+- Test different widths to find what works best for your content''';
+
+    await db.insert('misc_notes', {
+      'title': 'Image Reference Guide {not-for-ai}',
+      'content': imageGuideContent,
+      'order_index': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+
+    debugPrint('Inserted image guide note');
+  }
+
+  static Future<void> _insertAdvancedFeaturesNote(Database db) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final advancedFeaturesContent = '''# Advanced Features ⚡
+
+Explore powerful features to enhance your writing workflow.
+
+## AI Writing Assistance
+
+### Using AI Prompts
+
+1. Select text in any chapter, character description, or note
+2. Click the AI button (robot icon) in the toolbar
+3. Choose a prompt template or write your own
+4. AI will generate content based on your selection and prompt
+
+### AI Command Mode
+
+Some prompts use **command mode** to generate structured content:
+
+- **Generate Chapter Outline**: Creates multiple scene notes automatically
+- Add `{chapter}` placeholder in prompts for chapter-specific generation
+- Command mode prompts generate content directly into your book
+
+**Example command prompt:**
+```
+Create 3 scene outlines for {chapter}. Each should be a separate note.
+```
+
+### Custom Prompts
+
+Create your own AI prompts in the Prompts section:
+- **Regular prompts**: Generate text to insert
+- **Template prompts**: Reusable prompts shown in the toolbar
+- **Command prompts**: Auto-generate structured content (chapters, notes, etc.)
+
+## Text-to-Speech (TTS)
+
+Listen to your chapters being read aloud:
+
+1. Go to **Settings** → **Text-to-Speech**
+2. Select your preferred voice
+3. In the Chapters section, click the play button on any chapter
+4. Use pause/resume/stop controls in the app bar
+
+**Benefits:**
+- Catch awkward phrasing and repetition
+- Hear dialogue flow naturally
+- Proofread while doing other tasks
+
+## Multiple Book Projects
+
+Manage multiple book projects simultaneously:
+
+1. Click the Library icon in the sidebar
+2. Create a new book project or switch between existing ones
+3. Each project has its own database with separate:
+   - Chapters, characters, plots, notes
+   - Prompts, assets, settings
+   - AI usage tracking
+
+## Export to PDF
+
+Generate a professional PDF of your book:
+
+1. Go to **Settings** → **Export**
+2. Choose export options (font, spacing, chapters to include)
+3. Click "Export to PDF"
+4. Select save location
+
+## Privacy Features
+
+### Not-for-AI Marker
+
+Exclude content from AI requests by adding `{not-for-ai}` to any title or content:
+
+```
+Chapter Title: Draft Ideas {not-for-ai}
+```
+
+- Content marked this way won't be sent to AI services
+- Useful for personal notes, work-in-progress content, or sensitive information
+- A badge will appear indicating the content is excluded
+
+## Markdown Support
+
+Enable rich text formatting in Settings:
+
+- **Bold**: `**text**` or `__text__`
+- **Italic**: `*text*` or `_text_`
+- **Headers**: `# H1`, `## H2`, `### H3`
+- **Lists**: `- item` or `1. item`
+- **Links**: `[text](url)`
+- **Images**: `![alt](alias)` (from Assets)
+- **Code**: `` `inline` `` or ` ```block``` `
+
+## Keyboard Shortcuts
+
+- **Ctrl/Cmd + S**: Save changes
+- **Ctrl/Cmd + F**: Search
+- **Ctrl/Cmd + N**: New item
+- **Ctrl/Cmd + ,**: Settings
+
+## Tips for Power Users
+
+- Use the search feature to find content across all sections
+- Organize with the "Not for AI" marker for drafts and notes
+- Create custom prompt templates for your writing style
+- Export regularly to back up your work
+- Use command mode prompts to quickly generate structure''';
+
+    await db.insert('misc_notes', {
+      'title': 'Advanced Features',
+      'content': advancedFeaturesContent,
+      'order_index': 2,
+      'created_at': now,
+      'updated_at': now,
+    });
+
+    debugPrint('Inserted advanced features note');
   }
 
   static Future<void> _onUpgrade(
