@@ -95,6 +95,7 @@ export 'widgets/text_selection_overlay.dart';
 export 'widgets/ai_response_dialog.dart';
 export 'widgets/search_bottom_sheet.dart';
 export 'widgets/markdown_asset_image_builder.dart';
+export 'widgets/markdown_content.dart';
 export 'widgets/text_with_images.dart';
 
 // Local files

@@ -220,47 +220,10 @@ class _PlotsPageState extends State<PlotsPage> {
                             ),
                             const DSSpacing.spacing8(),
                             if (_markdownEnabled)
-                              MarkdownBody(
+                              MarkdownContent(
                                 data: plot.description,
-                                sizedImageBuilder: (config) =>
-                                    MarkdownAssetImageBuilder(
-                                      uri: config.uri,
-                                      title: config.title,
-                                      altText: config.alt,
-                                      width: config.width,
-                                      height: config.height,
-                                    ),
-                                styleSheet: MarkdownStyleSheet(
-                                  p: _readingFont.getTextStyle(
-                                    fontSize: _fontSize,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
-                                  ),
-                                  code: TextStyle(
-                                    fontFamily: 'JetBrainsMono',
-                                    fontSize: _fontSize * 0.9,
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                  ),
-                                  codeblockDecoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.radiusSmall,
-                                    ),
-                                    border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline
-                                          .withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  codeblockPadding: const EdgeInsets.all(12),
-                                ),
+                                readingFont: _readingFont,
+                                fontSize: _fontSize,
                               )
                             else
                               Text(
@@ -361,31 +324,11 @@ class _PlotsPageState extends State<PlotsPage> {
                           ),
                           const DSSpacing.spacing8(),
                           if (_markdownEnabled)
-                            SizedBox(
-                              height: AppTheme.collapsedContentHeight,
-                              child: SingleChildScrollView(
-                                physics: const NeverScrollableScrollPhysics(),
-                                child: MarkdownBody(
-                                  data: plot.description,
-                                  sizedImageBuilder: (config) =>
-                                      MarkdownAssetImageBuilder(
-                                        uri: config.uri,
-                                        title: config.title,
-                                        altText: config.alt,
-                                        width: config.width,
-                                        height: config.height,
-                                      ),
-                                  styleSheet: MarkdownStyleSheet(
-                                    p: _readingFont.getTextStyle(
-                                      fontSize: _fontSize,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            MarkdownContent(
+                              data: plot.description,
+                              readingFont: _readingFont,
+                              fontSize: _fontSize,
+                              collapsed: true,
                             )
                           else
                             DSText.bodyMedium(

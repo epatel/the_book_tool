@@ -382,50 +382,10 @@ class BookPageState extends State<BookPage> {
                                     ],
                                   ),
                                   if (_markdownEnabled)
-                                    MarkdownBody(
+                                    MarkdownContent(
                                       data: chapter.content,
-                                      fitContent: false,
-                                      styleSheet: MarkdownStyleSheet(
-                                        p: _readingFont.getTextStyle(
-                                          fontSize: _fontSize,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                        code: TextStyle(
-                                          fontFamily: 'JetBrainsMono',
-                                          fontSize: _fontSize * 0.9,
-                                          backgroundColor: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerHighest,
-                                        ),
-                                        codeblockDecoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(
-                                            AppTheme.radiusSmall,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .outline
-                                                .withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        codeblockPadding: const EdgeInsets.all(
-                                          12,
-                                        ),
-                                      ),
-                                      sizedImageBuilder: (config) =>
-                                          MarkdownAssetImageBuilder(
-                                            uri: config.uri,
-                                            title: config.title,
-                                            altText: config.alt,
-                                            width: config.width,
-                                            height: config.height,
-                                          ),
+                                      readingFont: _readingFont,
+                                      fontSize: _fontSize,
                                     )
                                   else
                                     TextWithImages(
@@ -549,85 +509,12 @@ class BookPageState extends State<BookPage> {
                           ),
                           const DSSpacing.spacing8(),
                           if (_markdownEnabled)
-                            SizedBox(
-                              height: AppTheme.collapsedContentHeight,
-                              child: Stack(
-                                children: [
-                                  SingleChildScrollView(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    child: MarkdownBody(
-                                      data: chapter.content,
-                                      fitContent: false,
-                                      styleSheet: MarkdownStyleSheet(
-                                        p: _readingFont.getTextStyle(
-                                          fontSize: _fontSize,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                        code: TextStyle(
-                                          fontFamily: 'JetBrainsMono',
-                                          fontSize: _fontSize * 0.9,
-                                          backgroundColor: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerHighest,
-                                        ),
-                                        codeblockDecoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(
-                                            AppTheme.radiusSmall,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .outline
-                                                .withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        codeblockPadding: const EdgeInsets.all(
-                                          12,
-                                        ),
-                                      ),
-                                      sizedImageBuilder: (config) =>
-                                          MarkdownAssetImageBuilder(
-                                            uri: config.uri,
-                                            title: config.title,
-                                            altText: config.alt,
-                                            width: config.width,
-                                            height: config.height,
-                                          ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: AppTheme.gradientOverlayHeight,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.surface.withValues(
-                                              alpha: 0.0,
-                                            ),
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.surface,
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            MarkdownContent(
+                              data: chapter.content,
+                              readingFont: _readingFont,
+                              fontSize: _fontSize,
+                              collapsed: true,
+                              showGradientOverlay: true,
                             )
                           else
                             DSText.bodyMedium(
