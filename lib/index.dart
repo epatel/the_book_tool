@@ -68,6 +68,7 @@ export 'repositories/prompt_repository.dart';
 export 'repositories/asset_repository.dart';
 
 // Providers
+export 'providers/base_entity_provider.dart';
 export 'providers/theme_provider.dart';
 export 'providers/chapter_provider.dart';
 export 'providers/character_provider.dart';
