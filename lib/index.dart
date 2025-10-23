@@ -58,6 +58,7 @@ export 'services/asset_service.dart';
 export 'services/thumbnail_service.dart';
 
 // Repositories
+export 'repositories/base_repository.dart';
 export 'repositories/manifest_repository.dart';
 export 'repositories/chapter_repository.dart';
 export 'repositories/character_repository.dart';
