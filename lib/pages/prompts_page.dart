@@ -310,286 +310,376 @@ class _PromptsPageState extends State<PromptsPage> {
               actions: [
                 IconButton(
                   icon: Icon(
-                    settings.expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                    settings.expandedAll
+                        ? Icons.unfold_less
+                        : Icons.unfold_more,
                   ),
                   tooltip: settings.expandedAll ? 'Collapse All' : 'Expand All',
                   onPressed: settings.toggleExpandAll,
                 ),
               ],
             ),
-        Expanded(
-          child: Consumer<PromptProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (provider.prompts.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.psychology_outlined,
-                        size: 64,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.3),
-                      ),
-                      const DSSpacing.spacing16(),
-                      DSText.bodyLarge(
-                        'No prompts yet',
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      const DSSpacing.spacing8(),
-                      DSText.bodySmall(
-                        'Tap the + button to add your first prompt',
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      const DSSpacing.spacing24(),
-                      DSButton.primary(
-                        label: 'Restore Default Prompts',
-                        onPressed: () async {
-                          await Provider.of<PromptProvider>(
-                            context,
-                            listen: false,
-                          ).restoreDefaults();
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              if (settings.expandedAll) {
-                return ListView.builder(
-                  padding: const EdgeInsets.all(AppTheme.spacing16),
-                  itemCount: provider.prompts.length,
-                  itemBuilder: (context, index) {
-                    final prompt = provider.prompts[index];
-                    return Container(
-                      key: ValueKey(prompt.id),
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(
-                        bottom: AppTheme.spacing12,
-                      ),
-                      child: DSCard(
-                        onTap: () => _showEditPromptDialog(prompt),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                DSText.titleMedium(prompt.title),
-                                const SizedBox(width: 8),
-                                if (prompt.command)
-                                  Tooltip(
-                                    message:
-                                        'Creates book items (chapters, characters, plots, notes)',
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primaryContainer,
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                      child: DSText.bodySmall(
-                                        'Command',
-                                        style: TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                if (prompt.isTemplate) ...[
-                                  const SizedBox(width: 8),
-                                  Tooltip(
-                                    message:
-                                        'Can be used as a template in AI prompts',
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primaryContainer,
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                      child: DSText.bodySmall(
-                                        'Template',
-                                        style: TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const DSSpacing.spacing8(),
-                            DSText.bodyMedium(
-                              prompt.content,
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }
-
-              return ReorderableListView.builder(
-                padding: const EdgeInsets.all(AppTheme.spacing16),
-                itemCount: provider.prompts.length,
-                proxyDecorator: (child, index, animation) {
-                  return AnimatedBuilder(
-                    animation: animation,
-                    builder: (context, child) {
-                      return Material(
-                        elevation: 0,
-                        color: Colors.transparent,
-                        child: child,
-                      );
-                    },
-                    child: child,
-                  );
-                },
-                onReorder: (oldIndex, newIndex) {
-                  if (oldIndex < newIndex) {
-                    newIndex -= 1;
+            Expanded(
+              child: Consumer<PromptProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
                   }
-                  final prompts = List<Prompt>.from(provider.prompts);
-                  final prompt = prompts.removeAt(oldIndex);
-                  prompts.insert(newIndex, prompt);
-                  Provider.of<PromptProvider>(
-                    context,
-                    listen: false,
-                  ).reorderPrompts(prompts);
-                },
-                itemBuilder: (context, index) {
-                  final prompt = provider.prompts[index];
-                  return Container(
-                    key: ValueKey(prompt.id),
-                    width: double.infinity,
-                    padding: const EdgeInsets.only(
-                      bottom: AppTheme.spacing12,
-                    ),
-                    child: DSCard(
-                      onTap: () => _showEditPromptDialog(prompt),
+
+                  if (provider.prompts.isEmpty) {
+                    return Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
-                            children: [
-                              DSText.titleMedium(prompt.title),
-                              const SizedBox(width: 8),
-                              if (prompt.command)
-                                Tooltip(
-                                  message:
-                                      'Creates book items (chapters, characters, plots, notes)',
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(
-                                        999,
-                                      ),
-                                    ),
-                                    child: DSText.bodySmall(
-                                      'Command',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              if (prompt.isTemplate) ...[
-                                const SizedBox(width: 8),
-                                Tooltip(
-                                  message:
-                                      'Can be used as a template in AI prompts',
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(
-                                        999,
-                                      ),
-                                    ),
-                                    child: DSText.bodySmall(
-                                      'Template',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
+                          Icon(
+                            Icons.psychology_outlined,
+                            size: 64,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
-                          const DSSpacing.spacing8(),
-                          DSText.bodyMedium(
-                            prompt.content,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+                          const DSSpacing.spacing16(),
+                          DSText.bodyLarge(
+                            'No prompts yet',
                             style: TextStyle(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
+                          ),
+                          const DSSpacing.spacing8(),
+                          DSText.bodySmall(
+                            'Tap the + button to add your first prompt',
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          const DSSpacing.spacing24(),
+                          DSButton.primary(
+                            label: 'Restore Default Prompts',
+                            onPressed: () async {
+                              await Provider.of<PromptProvider>(
+                                context,
+                                listen: false,
+                              ).restoreDefaults();
+                            },
                           ),
                         ],
                       ),
-                    ),
+                    );
+                  }
+
+                  if (settings.expandedAll) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(AppTheme.spacing16),
+                      itemCount: provider.prompts.length,
+                      itemBuilder: (context, index) {
+                        final prompt = provider.prompts[index];
+                        return Container(
+                          key: ValueKey(prompt.id),
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(
+                            bottom: AppTheme.spacing12,
+                          ),
+                          child: DSCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () =>
+                                            _showEditPromptDialog(prompt),
+                                        child: Row(
+                                          children: [
+                                            DSText.titleMedium(prompt.title),
+                                            const SizedBox(width: 8),
+                                            if (prompt.command)
+                                              Tooltip(
+                                                message:
+                                                    'Creates book items (chapters, characters, plots, notes)',
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        Theme.of(
+                                                              context,
+                                                            )
+                                                            .colorScheme
+                                                            .primaryContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          999,
+                                                        ),
+                                                  ),
+                                                  child: DSText.bodySmall(
+                                                    'Command',
+                                                    style: TextStyle(
+                                                      color:
+                                                          Theme.of(
+                                                                context,
+                                                              )
+                                                              .colorScheme
+                                                              .onPrimaryContainer,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            if (prompt.isTemplate) ...[
+                                              const SizedBox(width: 8),
+                                              Tooltip(
+                                                message:
+                                                    'Can be used as a template in AI prompts',
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        Theme.of(
+                                                              context,
+                                                            )
+                                                            .colorScheme
+                                                            .primaryContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          999,
+                                                        ),
+                                                  ),
+                                                  child: DSText.bodySmall(
+                                                    'Template',
+                                                    style: TextStyle(
+                                                      color:
+                                                          Theme.of(
+                                                                context,
+                                                              )
+                                                              .colorScheme
+                                                              .onPrimaryContainer,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      iconSize: 20,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.primary.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                      onPressed: () =>
+                                          _showEditPromptDialog(prompt),
+                                      tooltip: 'Edit Prompt',
+                                    ),
+                                  ],
+                                ),
+                                const DSSpacing.spacing8(),
+                                DSText.bodyMedium(
+                                  prompt.content,
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  return ReorderableListView.builder(
+                    padding: const EdgeInsets.all(AppTheme.spacing16),
+                    itemCount: provider.prompts.length,
+                    proxyDecorator: (child, index, animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) {
+                          return Material(
+                            elevation: 0,
+                            color: Colors.transparent,
+                            child: child,
+                          );
+                        },
+                        child: child,
+                      );
+                    },
+                    onReorder: (oldIndex, newIndex) {
+                      if (oldIndex < newIndex) {
+                        newIndex -= 1;
+                      }
+                      final prompts = List<Prompt>.from(provider.prompts);
+                      final prompt = prompts.removeAt(oldIndex);
+                      prompts.insert(newIndex, prompt);
+                      Provider.of<PromptProvider>(
+                        context,
+                        listen: false,
+                      ).reorderPrompts(prompts);
+                    },
+                    itemBuilder: (context, index) {
+                      final prompt = provider.prompts[index];
+                      return Container(
+                        key: ValueKey(prompt.id),
+                        width: double.infinity,
+                        padding: const EdgeInsets.only(
+                          bottom: AppTheme.spacing12,
+                        ),
+                        child: DSCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () =>
+                                          _showEditPromptDialog(prompt),
+                                      child: Row(
+                                        children: [
+                                          DSText.titleMedium(prompt.title),
+                                          const SizedBox(width: 8),
+                                          if (prompt.command)
+                                            Tooltip(
+                                              message:
+                                                  'Creates book items (chapters, characters, plots, notes)',
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      Theme.of(
+                                                            context,
+                                                          )
+                                                          .colorScheme
+                                                          .primaryContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        999,
+                                                      ),
+                                                ),
+                                                child: DSText.bodySmall(
+                                                  'Command',
+                                                  style: TextStyle(
+                                                    color:
+                                                        Theme.of(
+                                                              context,
+                                                            )
+                                                            .colorScheme
+                                                            .onPrimaryContainer,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          if (prompt.isTemplate) ...[
+                                            const SizedBox(width: 8),
+                                            Tooltip(
+                                              message:
+                                                  'Can be used as a template in AI prompts',
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      Theme.of(
+                                                            context,
+                                                          )
+                                                          .colorScheme
+                                                          .primaryContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        999,
+                                                      ),
+                                                ),
+                                                child: DSText.bodySmall(
+                                                  'Template',
+                                                  style: TextStyle(
+                                                    color:
+                                                        Theme.of(
+                                                              context,
+                                                            )
+                                                            .colorScheme
+                                                            .onPrimaryContainer,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    iconSize: 20,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                    onPressed: () =>
+                                        _showEditPromptDialog(prompt),
+                                    tooltip: 'Edit Prompt',
+                                  ),
+                                ],
+                              ),
+                              const DSSpacing.spacing8(),
+                              DSText.bodyMedium(
+                                prompt.content,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
-        ),
-      ],
-    );
+              ),
+            ),
+          ],
+        );
       },
     );
   }

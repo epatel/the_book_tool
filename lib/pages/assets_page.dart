@@ -80,8 +80,9 @@ class _AssetsPageState extends State<AssetsPage> {
               : 'image/jpeg';
 
           // Generate thumbnail
-          final thumbnail =
-              await ThumbnailService.generateThumbnail(processedImageData);
+          final thumbnail = await ThumbnailService.generateThumbnail(
+            processedImageData,
+          );
 
           if (mounted) {
             await Provider.of<AssetProvider>(context, listen: false).addAsset(
@@ -342,11 +343,10 @@ class _AssetsPageState extends State<AssetsPage> {
                         return Container(
                           key: ValueKey(asset.id),
                           width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            bottom: AppTheme.spacing12,
-                          ),
+                          // padding: const EdgeInsets.only(
+                          //   bottom: AppTheme.spacing12,
+                          // ),
                           child: DSCard(
-                            onTap: () => _showEditAssetDialog(asset),
                             child: Row(
                               children: [
                                 // Thumbnail
@@ -385,34 +385,47 @@ class _AssetsPageState extends State<AssetsPage> {
                                 const DSSpacing.spacing16(),
                                 // File info
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      DSText.titleMedium(asset.alias),
-                                      const DSSpacing.spacing4(),
-                                      DSText.bodySmall(
-                                        asset.filename,
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.6),
+                                  child: GestureDetector(
+                                    onTap: () => _showEditAssetDialog(asset),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        DSText.titleMedium(asset.alias),
+                                        const DSSpacing.spacing4(),
+                                        DSText.bodySmall(
+                                          asset.filename,
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
+                                          ),
                                         ),
-                                      ),
-                                      const DSSpacing.spacing4(),
-                                      DSText.bodySmall(
-                                        _formatFileSize(asset.fileSize),
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.5),
+                                        const DSSpacing.spacing4(),
+                                        DSText.bodySmall(
+                                          _formatFileSize(asset.fileSize),
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.5),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  iconSize: 20,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.7),
+                                  onPressed: () => _showEditAssetDialog(asset),
+                                  tooltip: 'Edit Asset',
+                                ),
+                                SizedBox(width: AppTheme.spacing24),
                               ],
                             ),
                           ),
