@@ -340,12 +340,9 @@ class _AssetsPageState extends State<AssetsPage> {
                       },
                       itemBuilder: (context, index) {
                         final asset = provider.assets[index];
-                        return Container(
+                        return SizedBox(
                           key: ValueKey(asset.id),
                           width: double.infinity,
-                          // padding: const EdgeInsets.only(
-                          //   bottom: AppTheme.spacing12,
-                          // ),
                           child: DSCard(
                             child: Row(
                               children: [

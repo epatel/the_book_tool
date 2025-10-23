@@ -107,37 +107,10 @@ class _PlotsPageState extends State<PlotsPage> {
                   }
 
                   if (provider.plots.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.lightbulb_outlined,
-                            size: 64,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.3),
-                          ),
-                          const DSSpacing.spacing16(),
-                          DSText.bodyLarge(
-                            'No plot ideas yet',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                          ),
-                          const DSSpacing.spacing8(),
-                          DSText.bodySmall(
-                            'Tap the + button to add your first plot idea',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.4),
-                            ),
-                          ),
-                        ],
-                      ),
+                    return const EmptyStateDisplay(
+                      icon: Icons.lightbulb_outlined,
+                      title: 'No plot ideas yet',
+                      subtitle: 'Tap the + button to add your first plot idea',
                     );
                   }
 
@@ -175,40 +148,7 @@ class _PlotsPageState extends State<PlotsPage> {
                                               plot.description,
                                             )) ...[
                                               const SizedBox(width: 8),
-                                              Tooltip(
-                                                message:
-                                                    'This content is excluded from AI requests',
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        Theme.of(
-                                                              context,
-                                                            )
-                                                            .colorScheme
-                                                            .primaryContainer,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          999,
-                                                        ),
-                                                  ),
-                                                  child: DSText.bodySmall(
-                                                    'Not for AI',
-                                                    style: TextStyle(
-                                                      color:
-                                                          Theme.of(
-                                                                context,
-                                                              )
-                                                              .colorScheme
-                                                              .onPrimaryContainer,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
+                                              const NotForAiBadge(),
                                             ],
                                           ],
                                         ),
@@ -313,40 +253,7 @@ class _PlotsPageState extends State<PlotsPage> {
                                             plot.description,
                                           )) ...[
                                             const SizedBox(width: 8),
-                                            Tooltip(
-                                              message:
-                                                  'This content is excluded from AI requests',
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      Theme.of(
-                                                            context,
-                                                          )
-                                                          .colorScheme
-                                                          .primaryContainer,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        999,
-                                                      ),
-                                                ),
-                                                child: DSText.bodySmall(
-                                                  'Not for AI',
-                                                  style: TextStyle(
-                                                    color:
-                                                        Theme.of(
-                                                              context,
-                                                            )
-                                                            .colorScheme
-                                                            .onPrimaryContainer,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
+                                            const NotForAiBadge(),
                                           ],
                                         ],
                                       ),
