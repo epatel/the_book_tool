@@ -91,9 +91,11 @@ class AIResponseDialog extends StatelessWidget {
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
+                codeblockPadding: const EdgeInsets.all(8),
                 listBullet: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
+                blockSpacing: Sizes.blockTopSpacing,
                 tableHead: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,

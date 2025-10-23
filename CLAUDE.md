@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The Book Tool is a Flutter application for book writing, helping authors organize chapters, characters, plot ideas, miscellaneous notes, and AI prompts. The app uses a stationary navigation panel layout (not a drawer) with five main sections: Chapters, Characters, Plots, Notes, and Prompts.
+The Book Tool is a Flutter application for book writing, helping authors organize chapters, characters, plot ideas, miscellaneous notes, AI prompts, and image assets. The app uses a stationary navigation panel layout (not a drawer) with six main sections: Book (chapters), Characters, Plots, Notes, Prompts, and Assets.
 
 ## Development Commands
 
@@ -173,9 +173,10 @@ The app uses a three-layer architecture:
 1. **Database Layer** (`lib/services/`):
    - `DatabaseService`: SQLite database initialization and schema management using `sqflite_common_ffi`
    - `DatabaseManager`: Handles multiple database files, database switching, and file management
-   - Tables: `manifest`, `chapters`, `characters`, `plots`, `misc_notes`, `prompts`
+   - Tables: `manifest`, `chapters`, `characters`, `plots`, `misc_notes`, `prompts`, `assets`
    - Each entity has: `id`, timestamps (`created_at`, `updated_at`), and `order_index` for manual ordering
    - Boolean fields stored as INTEGER (0/1) in SQLite
+   - Binary data (images, files) stored as BLOB in `assets` table
 
 2. **Repository Layer** (`lib/repositories/`):
    - Pure data access logic (no business logic)
@@ -452,10 +453,75 @@ _contentFocusNode.requestFocus();
 
 **Padding values**: The overlay padding (16, 19, 12, 20) has been reverse-engineered to exactly match TextFormField's internal padding. Do not change these values without testing alignment carefully.
 
+### Assets System
+The app includes a comprehensive asset management system for storing and referencing images within the book:
+
+**Asset Model** (`lib/models/asset.dart`):
+- `filename`: Original file name
+- `alias`: User-defined reference name (used in markdown)
+- `mimeType`: File MIME type (e.g., `image/png`, `image/jpeg`)
+- `fileData`: Binary file content stored as `Uint8List` (BLOB in database)
+- `fileSize`: File size in bytes
+- `thumbnail`: Optional thumbnail for grid/list display
+- Standard fields: `id`, `orderIndex`, `createdAt`, `updatedAt`
+
+**Asset Services**:
+- `AssetService`: Determines file types from MIME types (image, document, audio, video)
+- `ThumbnailService`: Generates thumbnails for images (max 200x200px, 85% quality JPG)
+- `FileTypeService`: Identifies MIME types from file bytes and extensions
+
+**ImportAssetDialog** (`lib/widgets/import_asset_dialog.dart`):
+Advanced image import dialog with:
+- **Crop functionality**: Interactive crop tool using `crop_image` package
+  - Free aspect ratio cropping
+  - Iterative cropping (crop multiple times)
+  - Preview mode on Import button hover (removes crop overlay)
+- **Resolution control**: Slider to set maximum width
+  - Dynamic range based on current image size (25% to 100% of width)
+  - Minimum clamped to 100px for small images
+  - Real-time clamping to prevent slider assertion errors
+- **Quality control**: JPG quality slider (50-100%, default 85%)
+- **Format preservation**: PNG for transparency, JPG for others
+- **Image processing**: Resizes and re-encodes before storage
+
+**Markdown Image Integration**:
+Images can be embedded in chapter content and AI responses using custom markdown syntax:
+```markdown
+![description](alias)
+![description](alias "width=400")
+![description](alias "width=400 align=center")
+![description](alias "align=right")
+```
+
+**Supported attributes**:
+- `width`: Pixel width (e.g., `width=400`)
+- `align`: Alignment - `left`, `center`, or `right` (default: left)
+
+**Implementation** (`lib/widgets/markdown_asset_image_builder.dart`):
+- Custom `MarkdownImageBuilder` that intercepts `![](alias)` syntax
+- Looks up asset by alias in `AssetProvider`
+- Parses attributes from title field: `"width=X align=Y"`
+- Renders with proper spacing using `Sizes.imageTopSpacing` and `Sizes.imageBottomSpacing`
+- Alignment handled via `Align` widget with `CrossAxisAlignment`
+- PDF export also supports this syntax via `PdfService`
+
+**Image Spacing** (`lib/sizes.dart`):
+Centralized constants for consistent image spacing:
+- `Sizes.imageTopSpacing = 8.0`
+- `Sizes.imageBottomSpacing = 8.0`
+- Used in both markdown rendering and PDF export
+
+**Usage in Edit Dialogs**:
+Edit dialogs for chapters, characters, plots, and misc notes include an "Insert Image" button that:
+- Shows popup menu of all available assets
+- Inserts markdown syntax at cursor position: `![description](alias)`
+- Button only visible when assets are available
+
 ### PDF Export
 - Export entire book to PDF with custom fonts and formatting
 - Respects reading font and font size settings
-- Handles markdown rendering if enabled
+- Handles markdown rendering if enabled, including image assets
+- Markdown image syntax fully supported with width and alignment attributes
 - Uses `file_selector` for save location dialog
 - Chapter numbering automatically handles "Prologue" special case
 
