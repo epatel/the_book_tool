@@ -35,7 +35,7 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
   void initState() {
     super.initState();
 
-    // Determine if image is PNG
+    // Determine default format from filename, but allow user to change it
     _isPng = widget.filename.toLowerCase().endsWith('.png');
 
     // Set default alias from filename
@@ -150,15 +150,30 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
             ),
             const DSSpacing.spacing16(),
 
-            // Format info
+            // Format selector
             Row(
               children: [
-                DSText.bodyMedium('Format: ${_isPng ? 'PNG' : 'JPG'}'),
+                const DSText.bodyMedium('Output Format:'),
                 const SizedBox(width: 16),
-                Icon(
-                  _isPng ? Icons.image : Icons.photo,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment<bool>(
+                      value: false,
+                      label: Text('JPG'),
+                      icon: Icon(Icons.photo, size: 18),
+                    ),
+                    ButtonSegment<bool>(
+                      value: true,
+                      label: Text('PNG'),
+                      icon: Icon(Icons.image, size: 18),
+                    ),
+                  ],
+                  selected: {_isPng},
+                  onSelectionChanged: (Set<bool> selection) {
+                    setState(() {
+                      _isPng = selection.first;
+                    });
+                  },
                 ),
               ],
             ),
@@ -326,6 +341,7 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
                       Navigator.of(context).pop({
                         'alias': _aliasController.text,
                         'imageData': processedImage,
+                        'isPng': _isPng, // Return the selected format
                       });
                     }
                   },

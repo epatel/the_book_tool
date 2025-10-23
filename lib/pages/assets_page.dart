@@ -73,11 +73,10 @@ class _AssetsPageState extends State<AssetsPage> {
         if (result != null && mounted) {
           final alias = result['alias'] as String;
           final processedImageData = result['imageData'] as Uint8List;
+          final isPng = result['isPng'] as bool;
 
-          // Determine final MIME type based on processed image
-          final finalMimeType = filename.toLowerCase().endsWith('.png')
-              ? 'image/png'
-              : 'image/jpeg';
+          // Determine final MIME type based on actual saved format
+          final finalMimeType = isPng ? 'image/png' : 'image/jpeg';
 
           // Generate thumbnail
           final thumbnail = await ThumbnailService.generateThumbnail(
