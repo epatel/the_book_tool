@@ -19,7 +19,9 @@
       "Bash(curl:*)",
       "Bash(unzip:*)",
       "WebSearch",
-      "Read(//Users/epatel/Desktop/**)"
+      "Read(//Users/epatel/Desktop/**)",
+      "mcp__dart__pub_dev_search",
+      "mcp__dart__pub"
     ],
     "deny": [],
     "ask": []

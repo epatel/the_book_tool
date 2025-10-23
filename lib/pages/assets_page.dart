@@ -59,26 +59,62 @@ class _AssetsPageState extends State<AssetsPage> {
 
       if (!mounted) return;
 
-      // Show dialog to enter alias
-      final alias = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => _AliasInputDialog(filename: filename),
-      );
+      // Only show ImportAssetDialog for images
+      if (FileTypeService.isImage(mimeType)) {
+        // Show import dialog with crop and resolution options
+        final result = await showDialog<Map<String, dynamic>>(
+          context: context,
+          builder: (dialogContext) => ImportAssetDialog(
+            imageData: bytes,
+            filename: filename,
+          ),
+        );
 
-      if (alias != null && alias.isNotEmpty && mounted) {
-        // Generate thumbnail for images
-        Uint8List? thumbnail;
-        if (FileTypeService.isImage(mimeType)) {
-          thumbnail = await ThumbnailService.generateThumbnail(bytes);
+        if (result != null && mounted) {
+          final alias = result['alias'] as String;
+          final processedImageData = result['imageData'] as Uint8List;
+
+          // Determine final MIME type based on processed image
+          final finalMimeType = filename.toLowerCase().endsWith('.png')
+              ? 'image/png'
+              : 'image/jpeg';
+
+          // Generate thumbnail
+          final thumbnail =
+              await ThumbnailService.generateThumbnail(processedImageData);
+
+          if (mounted) {
+            await Provider.of<AssetProvider>(context, listen: false).addAsset(
+              filename,
+              alias,
+              finalMimeType,
+              processedImageData,
+              thumbnail: thumbnail,
+            );
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Added $filename'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          }
         }
+      } else {
+        // For non-images, use the simple alias dialog
+        final alias = await showDialog<String>(
+          context: context,
+          builder: (dialogContext) => _AliasInputDialog(filename: filename),
+        );
 
-        if (mounted) {
+        if (alias != null && alias.isNotEmpty && mounted) {
           await Provider.of<AssetProvider>(context, listen: false).addAsset(
             filename,
             alias,
             mimeType,
             bytes,
-            thumbnail: thumbnail,
           );
 
           if (mounted) {

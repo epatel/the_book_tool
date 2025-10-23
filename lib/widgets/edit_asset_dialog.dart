@@ -1,4 +1,5 @@
 import 'package:the_book_tool/index.dart';
+import 'package:image/image.dart' as img;
 
 class EditAssetDialog extends StatefulWidget {
   final Asset asset;
@@ -16,6 +17,7 @@ class _EditAssetDialogState extends State<EditAssetDialog> {
   late final TextEditingController _aliasController;
   late String _originalAlias;
   bool _hasChanges = false;
+  String? _imageDimensions;
 
   @override
   void initState() {
@@ -23,6 +25,24 @@ class _EditAssetDialogState extends State<EditAssetDialog> {
     _originalAlias = widget.asset.alias;
     _aliasController = TextEditingController(text: widget.asset.alias);
     _aliasController.addListener(_checkForChanges);
+
+    // Get image dimensions if this is an image
+    if (widget.asset.isImage) {
+      _loadImageDimensions();
+    }
+  }
+
+  Future<void> _loadImageDimensions() async {
+    try {
+      final image = img.decodeImage(widget.asset.fileData);
+      if (image != null && mounted) {
+        setState(() {
+          _imageDimensions = '${image.width} × ${image.height} px';
+        });
+      }
+    } catch (e) {
+      // If decoding fails, just don't show dimensions
+    }
   }
 
   @override
@@ -149,16 +169,47 @@ class _EditAssetDialogState extends State<EditAssetDialog> {
               ),
               const DSSpacing.spacing16(),
 
-              // File size
-              DSText.labelLarge('File Size'),
-              const DSSpacing.spacing4(),
-              DSText.bodyMedium(
-                _formatFileSize(widget.asset.fileSize),
-                style: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+              // File size and dimensions (for images)
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DSText.labelLarge('File Size'),
+                        const DSSpacing.spacing4(),
+                        DSText.bodyMedium(
+                          _formatFileSize(widget.asset.fileSize),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (widget.asset.isImage && _imageDimensions != null) ...[
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DSText.labelLarge('Resolution'),
+                          const DSSpacing.spacing4(),
+                          DSText.bodyMedium(
+                            _imageDimensions!,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const DSSpacing.spacing16(),
 
@@ -192,27 +243,31 @@ class _EditAssetDialogState extends State<EditAssetDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _confirmDelete,
-          child: Text(
-            'Delete',
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: _canSave
-              ? () {
-                  Navigator.of(context).pop({
-                    'alias': _aliasController.text.trim(),
-                  });
-                }
-              : null,
-          child: const Text('Save'),
+        Row(
+          children: [
+            TextButton(
+              onPressed: _confirmDelete,
+              child: Text(
+                'Delete',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: _canSave
+                  ? () {
+                      Navigator.of(context).pop({
+                        'alias': _aliasController.text.trim(),
+                      });
+                    }
+                  : null,
+              child: const Text('Save'),
+            ),
+          ],
         ),
       ],
     );
