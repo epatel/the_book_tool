@@ -78,6 +78,7 @@ export 'providers/prompt_provider.dart';
 export 'providers/asset_provider.dart';
 export 'providers/tts_provider.dart';
 export 'providers/ai_usage_provider.dart';
+export 'providers/reading_settings_provider.dart';
 
 // Widgets
 export 'widgets/add_chapter_dialog.dart';

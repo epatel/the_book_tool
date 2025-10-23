@@ -8,33 +8,14 @@ class PromptsPage extends StatefulWidget {
 }
 
 class _PromptsPageState extends State<PromptsPage> {
-  final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
-  bool _expandedAll = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PromptProvider>(context, listen: false).loadPrompts();
-      _loadSettings();
     });
-  }
-
-  Future<void> _loadSettings() async {
-    final manifest = await _manifestRepository.getAllAsMap();
-    if (mounted) {
-      setState(() {
-        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
-      });
-    }
-  }
-
-  Future<void> _toggleExpandAll() async {
-    setState(() {
-      _expandedAll = !_expandedAll;
-    });
-    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _sendPromptToAI(Prompt prompt) async {
@@ -313,27 +294,29 @@ class _PromptsPageState extends State<PromptsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        DSAppBar(
-          title: 'Prompts',
-          titleActions: [
-            IconButton(
-              icon: const DSAddIcon(),
-              tooltip: 'Add Prompt',
-              onPressed: _showAddPromptDialog,
+    return Consumer<ReadingSettingsProvider>(
+      builder: (context, settings, child) {
+        return Column(
+          children: [
+            DSAppBar(
+              title: 'Prompts',
+              titleActions: [
+                IconButton(
+                  icon: const DSAddIcon(),
+                  tooltip: 'Add Prompt',
+                  onPressed: _showAddPromptDialog,
+                ),
+              ],
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    settings.expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                  ),
+                  tooltip: settings.expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: settings.toggleExpandAll,
+                ),
+              ],
             ),
-          ],
-          actions: [
-            IconButton(
-              icon: Icon(
-                _expandedAll ? Icons.unfold_less : Icons.unfold_more,
-              ),
-              tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
-              onPressed: _toggleExpandAll,
-            ),
-          ],
-        ),
         Expanded(
           child: Consumer<PromptProvider>(
             builder: (context, provider, child) {
@@ -386,7 +369,7 @@ class _PromptsPageState extends State<PromptsPage> {
                 );
               }
 
-              if (_expandedAll) {
+              if (settings.expandedAll) {
                 return ListView.builder(
                   padding: const EdgeInsets.all(AppTheme.spacing16),
                   itemCount: provider.prompts.length,
@@ -606,6 +589,8 @@ class _PromptsPageState extends State<PromptsPage> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }

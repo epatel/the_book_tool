@@ -8,39 +8,14 @@ class MiscPage extends StatefulWidget {
 }
 
 class _MiscPageState extends State<MiscPage> {
-  final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
-  bool _expandedAll = false;
-  bool _markdownEnabled = false;
-  ReadingFont _readingFont = ReadingFont.lora;
-  double _fontSize = 14.0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MiscNoteProvider>(context, listen: false).loadNotes();
-      _loadSettings();
     });
-  }
-
-  Future<void> _loadSettings() async {
-    final manifest = await _manifestRepository.getAllAsMap();
-    if (mounted) {
-      setState(() {
-        _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
-        _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
-        _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
-        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
-      });
-    }
-  }
-
-  Future<void> _toggleExpandAll() async {
-    setState(() {
-      _expandedAll = !_expandedAll;
-    });
-    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _showAddNoteDialog() async {
@@ -98,27 +73,32 @@ class _MiscPageState extends State<MiscPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        DSAppBar(
-          title: 'Notes',
-          titleActions: [
-            IconButton(
-              icon: const DSAddIcon(),
-              tooltip: 'Add Note',
-              onPressed: _showAddNoteDialog,
+    return Consumer<ReadingSettingsProvider>(
+      builder: (context, settings, child) {
+        return Column(
+          children: [
+            DSAppBar(
+              title: 'Notes',
+              titleActions: [
+                IconButton(
+                  icon: const DSAddIcon(),
+                  tooltip: 'Add Note',
+                  onPressed: _showAddNoteDialog,
+                ),
+              ],
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    settings.expandedAll
+                        ? Icons.unfold_less
+                        : Icons.unfold_more,
+                  ),
+                  tooltip:
+                      settings.expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: settings.toggleExpandAll,
+                ),
+              ],
             ),
-          ],
-          actions: [
-            IconButton(
-              icon: Icon(
-                _expandedAll ? Icons.unfold_less : Icons.unfold_more,
-              ),
-              tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
-              onPressed: _toggleExpandAll,
-            ),
-          ],
-        ),
         Expanded(
           child: Consumer<MiscNoteProvider>(
             builder: (context, provider, child) {
@@ -161,7 +141,7 @@ class _MiscPageState extends State<MiscPage> {
                 );
               }
 
-              if (_expandedAll) {
+              if (settings.expandedAll) {
                 return ListView.builder(
                   padding: const EdgeInsets.all(AppTheme.spacing16),
                   itemCount: provider.notes.length,
@@ -218,17 +198,17 @@ class _MiscPageState extends State<MiscPage> {
                               ],
                             ),
                             const DSSpacing.spacing8(),
-                            if (_markdownEnabled)
+                            if (settings.markdownEnabled)
                               MarkdownContent(
                                 data: note.content,
-                                readingFont: _readingFont,
-                                fontSize: _fontSize,
+                                readingFont: settings.readingFont,
+                                fontSize: settings.fontSize,
                               )
                             else
                               Text(
                                 note.content,
-                                style: _readingFont.getTextStyle(
-                                  fontSize: _fontSize,
+                                style: settings.readingFont.getTextStyle(
+                                  fontSize: settings.fontSize,
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
                                 ),
@@ -322,11 +302,11 @@ class _MiscPageState extends State<MiscPage> {
                             ],
                           ),
                           const DSSpacing.spacing8(),
-                          if (_markdownEnabled)
+                          if (settings.markdownEnabled)
                             MarkdownContent(
                               data: note.content,
-                              readingFont: _readingFont,
-                              fontSize: _fontSize,
+                              readingFont: settings.readingFont,
+                              fontSize: settings.fontSize,
                               collapsed: true,
                             )
                           else
@@ -334,8 +314,8 @@ class _MiscPageState extends State<MiscPage> {
                               note.content,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: _readingFont.getTextStyle(
-                                fontSize: _fontSize,
+                              style: settings.readingFont.getTextStyle(
+                                fontSize: settings.fontSize,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -351,6 +331,8 @@ class _MiscPageState extends State<MiscPage> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }

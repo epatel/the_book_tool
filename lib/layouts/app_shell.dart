@@ -184,6 +184,14 @@ class _AppShellState extends State<AppShell> {
         _onDataChanged();
         await _loadSettings();
 
+        // Reload reading settings provider
+        if (mounted) {
+          await Provider.of<ReadingSettingsProvider>(
+            context,
+            listen: false,
+          ).loadSettings();
+        }
+
         // Navigate to the last section saved in the newly opened database
         final manifest = await _manifestRepository.getAllAsMap();
         final lastSection = manifest['LastSection'] ?? '/book';
@@ -196,7 +204,6 @@ class _AppShellState extends State<AppShell> {
 
   Future<void> _showSettingsDialog() async {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final oldMarkdownEnabled = _markdownEnabled;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -214,12 +221,10 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (result != null && mounted) {
-      final newMarkdownEnabled = result['markdown'] as bool;
-
       await _manifestRepository.setMultiple({
         'Name': result['name'] as String,
         'Author': result['author'] as String,
-        'Markdown': newMarkdownEnabled.toString(),
+        'Markdown': (result['markdown'] as bool).toString(),
         'ContextPrompt': result['contextPrompt'] as String,
         'ReadingFont': (result['readingFont'] as ReadingFont).name,
         'FontSize': (result['fontSize'] as double).toString(),
@@ -236,10 +241,12 @@ class _AppShellState extends State<AppShell> {
 
       await _loadSettings();
 
-      // If markdown setting changed, notify BookPage to reload
-      if (oldMarkdownEnabled != newMarkdownEnabled && mounted) {
-        // Increment the notifier to trigger listeners
-        settingsChangeNotifier.value++;
+      // Notify the reading settings provider to reload settings
+      if (mounted) {
+        await Provider.of<ReadingSettingsProvider>(
+          context,
+          listen: false,
+        ).loadSettings();
       }
     }
   }

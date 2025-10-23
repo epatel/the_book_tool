@@ -16,10 +16,15 @@ void main() async {
   // Listen for window changes to save state
   windowManager.addListener(_WindowStateListener(windowPrefs));
 
+  // Create and load reading settings provider
+  final readingSettingsProvider = ReadingSettingsProvider();
+  await readingSettingsProvider.loadSettings();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider.value(value: readingSettingsProvider),
         ChangeNotifierProvider(create: (_) => ChapterProvider()),
         ChangeNotifierProvider(create: (_) => CharacterProvider()),
         ChangeNotifierProvider(create: (_) => PlotProvider()),

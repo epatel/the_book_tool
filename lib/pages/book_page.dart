@@ -1,8 +1,5 @@
 import 'package:the_book_tool/index.dart';
 
-// Global notifier to signal settings changes
-final ValueNotifier<int> settingsChangeNotifier = ValueNotifier<int>(0);
-
 class BookPage extends StatefulWidget {
   const BookPage({super.key});
 
@@ -11,13 +8,7 @@ class BookPage extends StatefulWidget {
 }
 
 class BookPageState extends State<BookPage> {
-  final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
-  bool _markdownEnabled = false;
-  bool _expandedAll = false;
-  String _bookName = '';
-  ReadingFont _readingFont = ReadingFont.lora;
-  double _fontSize = 14.0;
   bool _hasTtsVoice = false;
 
   @override
@@ -25,40 +16,8 @@ class BookPageState extends State<BookPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ChapterProvider>(context, listen: false).loadChapters();
-      _loadSettings();
       _checkTtsAvailability();
     });
-
-    // Listen to settings changes
-    settingsChangeNotifier.addListener(_onSettingsChanged);
-  }
-
-  void _onSettingsChanged() {
-    _loadSettings();
-  }
-
-  @override
-  void dispose() {
-    settingsChangeNotifier.removeListener(_onSettingsChanged);
-    super.dispose();
-  }
-
-  Future<void> _loadSettings() async {
-    final manifest = await _manifestRepository.getAllAsMap();
-    if (mounted) {
-      setState(() {
-        _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
-        _bookName = manifest['Name'] ?? '';
-        _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
-        _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
-        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
-      });
-    }
-  }
-
-  // Public method to reload settings from external callers
-  Future<void> reloadSettings() async {
-    await _loadSettings();
   }
 
   Future<void> _checkTtsAvailability() async {
@@ -69,13 +28,6 @@ class BookPageState extends State<BookPage> {
         _hasTtsVoice = hasVoice;
       });
     }
-  }
-
-  Future<void> _toggleExpandAll() async {
-    setState(() {
-      _expandedAll = !_expandedAll;
-    });
-    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _showAddChapterDialog() async {
@@ -131,13 +83,18 @@ class BookPageState extends State<BookPage> {
     }
   }
 
-  void _playChapter(Chapter chapter, int index, List<Chapter> allChapters) {
+  void _playChapter(
+    Chapter chapter,
+    int index,
+    List<Chapter> allChapters,
+    bool markdownEnabled,
+  ) {
     final ttsProvider = Provider.of<TtsProvider>(context, listen: false);
     ttsProvider.playChapter(
       chapter,
       index,
       allChapters,
-      markdownEnabled: _markdownEnabled,
+      markdownEnabled: markdownEnabled,
     );
   }
 
@@ -170,52 +127,54 @@ class BookPageState extends State<BookPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        DSAppBar(
-          title: _bookName,
-          titleActions: [
-            IconButton(
-              icon: const DSAddIcon(),
-              tooltip: 'Add Chapter',
-              onPressed: _showAddChapterDialog,
+    return Consumer<ReadingSettingsProvider>(
+      builder: (context, settings, child) {
+        return Column(
+          children: [
+            DSAppBar(
+              title: settings.bookName,
+              titleActions: [
+                IconButton(
+                  icon: const DSAddIcon(),
+                  tooltip: 'Add Chapter',
+                  onPressed: _showAddChapterDialog,
+                ),
+              ],
+              actions: [
+                Consumer<TtsProvider>(
+                  builder: (context, ttsProvider, child) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (ttsProvider.isPlaying)
+                          IconButton(
+                            icon: Icon(
+                              ttsProvider.isPaused ? Icons.play_arrow : Icons.pause,
+                            ),
+                            tooltip: ttsProvider.isPaused ? 'Resume' : 'Pause',
+                            onPressed: ttsProvider.isPaused
+                                ? ttsProvider.resume
+                                : ttsProvider.pause,
+                          ),
+                        if (ttsProvider.isPlaying)
+                          IconButton(
+                            icon: const Icon(Icons.stop),
+                            tooltip: 'Stop',
+                            onPressed: ttsProvider.stop,
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    settings.expandedAll ? Icons.unfold_less : Icons.unfold_more,
+                  ),
+                  tooltip: settings.expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: settings.toggleExpandAll,
+                ),
+              ],
             ),
-          ],
-          actions: [
-            Consumer<TtsProvider>(
-              builder: (context, ttsProvider, child) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (ttsProvider.isPlaying)
-                      IconButton(
-                        icon: Icon(
-                          ttsProvider.isPaused ? Icons.play_arrow : Icons.pause,
-                        ),
-                        tooltip: ttsProvider.isPaused ? 'Resume' : 'Pause',
-                        onPressed: ttsProvider.isPaused
-                            ? ttsProvider.resume
-                            : ttsProvider.pause,
-                      ),
-                    if (ttsProvider.isPlaying)
-                      IconButton(
-                        icon: const Icon(Icons.stop),
-                        tooltip: 'Stop',
-                        onPressed: ttsProvider.stop,
-                      ),
-                  ],
-                );
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                _expandedAll ? Icons.unfold_less : Icons.unfold_more,
-              ),
-              tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
-              onPressed: _toggleExpandAll,
-            ),
-          ],
-        ),
         Expanded(
           child: Consumer<ChapterProvider>(
             builder: (context, provider, child) {
@@ -258,7 +217,7 @@ class BookPageState extends State<BookPage> {
                 );
               }
 
-              if (_expandedAll) {
+              if (settings.expandedAll) {
                 return ListView.builder(
                   padding: const EdgeInsets.all(AppTheme.spacing16),
                   itemCount: provider.chapters.length,
@@ -376,22 +335,23 @@ class BookPageState extends State<BookPage> {
                                             chapter,
                                             index,
                                             provider.chapters,
+                                            settings.markdownEnabled,
                                           ),
                                           tooltip: 'Play',
                                         ),
                                     ],
                                   ),
-                                  if (_markdownEnabled)
+                                  if (settings.markdownEnabled)
                                     MarkdownContent(
                                       data: chapter.content,
-                                      readingFont: _readingFont,
-                                      fontSize: _fontSize,
+                                      readingFont: settings.readingFont,
+                                      fontSize: settings.fontSize,
                                     )
                                   else
                                     TextWithImages(
                                       text: chapter.content,
-                                      style: _readingFont.getTextStyle(
-                                        fontSize: _fontSize,
+                                      style: settings.readingFont.getTextStyle(
+                                        fontSize: settings.fontSize,
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onSurface
@@ -508,11 +468,11 @@ class BookPageState extends State<BookPage> {
                             ],
                           ),
                           const DSSpacing.spacing8(),
-                          if (_markdownEnabled)
+                          if (settings.markdownEnabled)
                             MarkdownContent(
                               data: chapter.content,
-                              readingFont: _readingFont,
-                              fontSize: _fontSize,
+                              readingFont: settings.readingFont,
+                              fontSize: settings.fontSize,
                               collapsed: true,
                               showGradientOverlay: true,
                             )
@@ -521,8 +481,8 @@ class BookPageState extends State<BookPage> {
                               chapter.content,
                               maxLines: AppTheme.maxLinesPreview,
                               overflow: TextOverflow.ellipsis,
-                              style: _readingFont.getTextStyle(
-                                fontSize: _fontSize,
+                              style: settings.readingFont.getTextStyle(
+                                fontSize: settings.fontSize,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -538,6 +498,8 @@ class BookPageState extends State<BookPage> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }

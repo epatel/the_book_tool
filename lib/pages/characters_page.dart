@@ -8,39 +8,14 @@ class CharactersPage extends StatefulWidget {
 }
 
 class _CharactersPageState extends State<CharactersPage> {
-  final ManifestRepository _manifestRepository = ManifestRepository();
   final AIService _aiService = AIService();
-  bool _expandedAll = false;
-  bool _markdownEnabled = false;
-  ReadingFont _readingFont = ReadingFont.lora;
-  double _fontSize = 14.0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CharacterProvider>(context, listen: false).loadCharacters();
-      _loadSettings();
     });
-  }
-
-  Future<void> _loadSettings() async {
-    final manifest = await _manifestRepository.getAllAsMap();
-    if (mounted) {
-      setState(() {
-        _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
-        _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
-        _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
-        _expandedAll = manifest['ExpandedAll']?.toLowerCase() == 'true';
-      });
-    }
-  }
-
-  Future<void> _toggleExpandAll() async {
-    setState(() {
-      _expandedAll = !_expandedAll;
-    });
-    await _manifestRepository.set('ExpandedAll', _expandedAll.toString());
   }
 
   Future<void> _showAddCharacterDialog() async {
@@ -99,27 +74,32 @@ class _CharactersPageState extends State<CharactersPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        DSAppBar(
-          title: 'Characters',
-          titleActions: [
-            IconButton(
-              icon: const DSAddIcon(),
-              tooltip: 'Add Character',
-              onPressed: _showAddCharacterDialog,
+    return Consumer<ReadingSettingsProvider>(
+      builder: (context, settings, child) {
+        return Column(
+          children: [
+            DSAppBar(
+              title: 'Characters',
+              titleActions: [
+                IconButton(
+                  icon: const DSAddIcon(),
+                  tooltip: 'Add Character',
+                  onPressed: _showAddCharacterDialog,
+                ),
+              ],
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    settings.expandedAll
+                        ? Icons.unfold_less
+                        : Icons.unfold_more,
+                  ),
+                  tooltip:
+                      settings.expandedAll ? 'Collapse All' : 'Expand All',
+                  onPressed: settings.toggleExpandAll,
+                ),
+              ],
             ),
-          ],
-          actions: [
-            IconButton(
-              icon: Icon(
-                _expandedAll ? Icons.unfold_less : Icons.unfold_more,
-              ),
-              tooltip: _expandedAll ? 'Collapse All' : 'Expand All',
-              onPressed: _toggleExpandAll,
-            ),
-          ],
-        ),
         Expanded(
           child: Consumer<CharacterProvider>(
             builder: (context, provider, child) {
@@ -162,7 +142,7 @@ class _CharactersPageState extends State<CharactersPage> {
                 );
               }
 
-              if (_expandedAll) {
+              if (settings.expandedAll) {
                 return ListView.builder(
                   padding: const EdgeInsets.all(AppTheme.spacing16),
                   itemCount: provider.characters.length,
@@ -219,17 +199,17 @@ class _CharactersPageState extends State<CharactersPage> {
                               ],
                             ),
                             const DSSpacing.spacing8(),
-                            if (_markdownEnabled)
+                            if (settings.markdownEnabled)
                               MarkdownContent(
                                 data: character.description,
-                                readingFont: _readingFont,
-                                fontSize: _fontSize,
+                                readingFont: settings.readingFont,
+                                fontSize: settings.fontSize,
                               )
                             else
                               Text(
                                 character.description,
-                                style: _readingFont.getTextStyle(
-                                  fontSize: _fontSize,
+                                style: settings.readingFont.getTextStyle(
+                                  fontSize: settings.fontSize,
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
                                 ),
@@ -325,11 +305,11 @@ class _CharactersPageState extends State<CharactersPage> {
                             ],
                           ),
                           const DSSpacing.spacing8(),
-                          if (_markdownEnabled)
+                          if (settings.markdownEnabled)
                             MarkdownContent(
                               data: character.description,
-                              readingFont: _readingFont,
-                              fontSize: _fontSize,
+                              readingFont: settings.readingFont,
+                              fontSize: settings.fontSize,
                               collapsed: true,
                             )
                           else
@@ -337,8 +317,8 @@ class _CharactersPageState extends State<CharactersPage> {
                               character.description,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: _readingFont.getTextStyle(
-                                fontSize: _fontSize,
+                              style: settings.readingFont.getTextStyle(
+                                fontSize: settings.fontSize,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -354,6 +334,8 @@ class _CharactersPageState extends State<CharactersPage> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }
