@@ -81,6 +81,8 @@ export 'providers/ai_usage_provider.dart';
 export 'providers/reading_settings_provider.dart';
 
 // Widgets
+export 'widgets/add_entity_dialog_config.dart';
+export 'widgets/add_entity_dialog.dart';
 export 'widgets/add_chapter_dialog.dart';
 export 'widgets/add_character_dialog.dart';
 export 'widgets/add_plot_dialog.dart';
