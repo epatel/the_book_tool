@@ -43,6 +43,20 @@ class MarkdownContent extends StatelessWidget {
         ),
       ),
       codeblockPadding: const EdgeInsets.all(12),
+      blockquote: readingFont.getTextStyle(
+        fontSize: fontSize,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
+      blockquoteDecoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 4,
+          ),
+        ),
+      ),
     );
   }
 
