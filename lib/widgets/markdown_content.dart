@@ -57,6 +57,14 @@ class MarkdownContent extends StatelessWidget {
           ),
         ),
       ),
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
     );
   }
 
