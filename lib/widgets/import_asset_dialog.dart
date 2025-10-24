@@ -84,8 +84,9 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
 
   Future<void> _onCropPressed() async {
     final croppedImage = await _cropController.croppedBitmap();
-    final byteData =
-        await croppedImage.toByteData(format: ui.ImageByteFormat.png);
+    final byteData = await croppedImage.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
     if (byteData != null) {
       final croppedBytes = byteData.buffer.asUint8List();
 
@@ -183,9 +184,14 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
             if (_imageWidth != null) ...[
               Builder(
                 builder: (context) {
-                  final minWidth = (_imageWidth! / 4).clamp(100, 640).toDouble();
+                  final minWidth = (_imageWidth! / 4)
+                      .clamp(100, 640)
+                      .toDouble();
                   final maxWidth = _imageWidth!.toDouble();
-                  final clampedValue = _maxWidth.toDouble().clamp(minWidth, maxWidth);
+                  final clampedValue = _maxWidth.toDouble().clamp(
+                    minWidth,
+                    maxWidth,
+                  );
 
                   return Row(
                     children: [
@@ -232,10 +238,9 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
                 child: DSText.bodySmall(
                   'Current resolution: $_imageWidth × $_imageHeight px',
                   style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -304,7 +309,9 @@ class _ImportAssetDialogState extends State<ImportAssetDialog> {
                       : CropImage(
                           key: ValueKey(_cropKey),
                           controller: _cropController,
-                          image: Image.memory(_croppedImage ?? widget.imageData),
+                          image: Image.memory(
+                            _croppedImage ?? widget.imageData,
+                          ),
                           paddingSize: 25.0,
                           alwaysMove: true,
                         ),

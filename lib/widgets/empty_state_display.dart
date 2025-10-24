@@ -26,20 +26,26 @@ class EmptyStateDisplay extends StatelessWidget {
           Icon(
             icon,
             size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const DSSpacing.spacing16(),
           DSText.bodyLarge(
             title,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const DSSpacing.spacing8(),
           DSText.bodySmall(
             subtitle,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
           if (action != null) ...[

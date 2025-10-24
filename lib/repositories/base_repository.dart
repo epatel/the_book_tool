@@ -78,8 +78,10 @@ abstract class BaseRepository<T> {
 
     for (var i = 0; i < entities.length; i++) {
       // Use dynamic to access copyWith, toMap, and id
-      final entityWithNewIndex = (entities[i] as dynamic).copyWith(orderIndex: i) as T;
-      final map = (entityWithNewIndex as dynamic).toMap() as Map<String, dynamic>;
+      final entityWithNewIndex =
+          (entities[i] as dynamic).copyWith(orderIndex: i) as T;
+      final map =
+          (entityWithNewIndex as dynamic).toMap() as Map<String, dynamic>;
       final id = (entityWithNewIndex as dynamic).id as int?;
 
       batch.update(

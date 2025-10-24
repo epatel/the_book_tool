@@ -293,7 +293,12 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
                       decoration: InputDecoration(
                         labelText: widget.config.field2Label,
                         border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          12,
+                          20,
+                          12,
+                          20,
+                        ),
                       ),
                       maxLines: widget.config.field2MaxLines,
                       readOnly: _isLoadingAi,
@@ -453,7 +458,9 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
                     height: 24,
                   ),
                 ),
-                onPressed: widget.hasApiKey && !_isLoadingAi ? _toggleAiPrompt : null,
+                onPressed: widget.hasApiKey && !_isLoadingAi
+                    ? _toggleAiPrompt
+                    : null,
                 tooltip: widget.hasApiKey
                     ? 'AI Assistant'
                     : 'AI Assistant (API key required)',

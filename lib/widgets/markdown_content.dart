@@ -106,8 +106,8 @@ class MarkdownContent extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         Theme.of(context).colorScheme.surface.withValues(
-                              alpha: 0.0,
-                            ),
+                          alpha: 0.0,
+                        ),
                         Theme.of(context).colorScheme.surface,
                       ],
                     ),

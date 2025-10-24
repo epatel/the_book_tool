@@ -516,13 +516,14 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
         context,
         listen: false,
       );
-      final hasPrologue = chapterProvider.chapters.isNotEmpty &&
+      final hasPrologue =
+          chapterProvider.chapters.isNotEmpty &&
           chapterProvider.chapters.first.orderIndex == 0 &&
           chapterProvider.chapters.first.title.toLowerCase() == 'prologue';
 
       final orderIndex = widget.getOrderIndex!(widget.entity) ?? 0;
-      final isPrologue = orderIndex == 0 &&
-          _field1Controller.text.toLowerCase() == 'prologue';
+      final isPrologue =
+          orderIndex == 0 && _field1Controller.text.toLowerCase() == 'prologue';
 
       final String chapterText;
       if (isPrologue) {
@@ -597,7 +598,12 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                       decoration: InputDecoration(
                         labelText: widget.config.field2Label,
                         border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          12,
+                          20,
+                          12,
+                          20,
+                        ),
                       ),
                       maxLines: widget.config.field2MaxLines,
                       readOnly: _isLoadingAi,
@@ -664,7 +670,8 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                           decoration: InputDecoration(
                             labelText: 'AI Prompt',
                             border: const OutlineInputBorder(),
-                            hintText: _enableCommands &&
+                            hintText:
+                                _enableCommands &&
                                     widget.config.supportsCommandMode
                                 ? widget.config.aiPromptHintCommandMode
                                 : widget.config.aiPromptHint,
@@ -693,8 +700,8 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                                 setState(() {
                                   final promptText =
                                       _getTemplateSubstitutedPrompt(
-                                    template.content,
-                                  );
+                                        template.content,
+                                      );
                                   _aiPromptController.text = promptText;
                                   if (widget.config.supportsCommandMode) {
                                     _enableCommands = template.command;
@@ -708,10 +715,14 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                                       listen: false,
                                     );
                                 final templates = promptProvider.prompts
-                                    .where((p) =>
-                                        p.isTemplate &&
-                                        (!p.command ||
-                                            widget.config.supportsCommandMode))
+                                    .where(
+                                      (p) =>
+                                          p.isTemplate &&
+                                          (!p.command ||
+                                              widget
+                                                  .config
+                                                  .supportsCommandMode),
+                                    )
                                     .toList();
 
                                 if (templates.isEmpty) {
@@ -751,7 +762,8 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.send),
-                              onPressed: _aiPromptController.text.isEmpty ||
+                              onPressed:
+                                  _aiPromptController.text.isEmpty ||
                                       (!_enableCommands &&
                                           (_savedSelection == null ||
                                               !_savedSelection!.isValid))
@@ -786,7 +798,9 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                     height: 24,
                   ),
                 ),
-                onPressed: widget.hasApiKey && !_isLoadingAi ? _toggleAiPrompt : null,
+                onPressed: widget.hasApiKey && !_isLoadingAi
+                    ? _toggleAiPrompt
+                    : null,
                 tooltip: widget.hasApiKey
                     ? 'AI Assistant'
                     : 'AI Assistant (API key required)',
@@ -797,7 +811,9 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                     final hasAssets = assetProvider.assets.isNotEmpty;
                     return IconButton(
                       icon: const Icon(Icons.add_photo_alternate),
-                      onPressed: hasAssets && !_isLoadingAi ? _insertImageTag : null,
+                      onPressed: hasAssets && !_isLoadingAi
+                          ? _insertImageTag
+                          : null,
                       tooltip: hasAssets
                           ? 'Insert Image'
                           : 'Insert Image (no assets available)',
