@@ -238,9 +238,22 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_hasContent(),
+      canPop: !_hasContent() && !_isLoadingAi,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+
+        // Prevent dismissal if AI is loading
+        if (_isLoadingAi) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please wait for AI to finish'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
 
         final shouldPop = await _confirmDiscard();
         if (shouldPop && context.mounted) {
@@ -262,6 +275,7 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
                     labelText: widget.config.field1Label,
                     border: const OutlineInputBorder(),
                   ),
+                  enabled: !_isLoadingAi,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return widget.config.field1ValidationMessage;
@@ -439,7 +453,7 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
                     height: 24,
                   ),
                 ),
-                onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+                onPressed: widget.hasApiKey && !_isLoadingAi ? _toggleAiPrompt : null,
                 tooltip: widget.hasApiKey
                     ? 'AI Assistant'
                     : 'AI Assistant (API key required)',
@@ -447,23 +461,27 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
               const Spacer(),
               DSButton.text(
                 label: 'Close',
-                onPressed: () async {
-                  final shouldClose = await _confirmDiscard();
-                  if (shouldClose && context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                },
+                onPressed: _isLoadingAi
+                    ? null
+                    : () async {
+                        final shouldClose = await _confirmDiscard();
+                        if (shouldClose && context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
               ),
               DSButton.primary(
                 label: 'Add',
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    Navigator.of(context).pop({
-                      widget.config.field1Key: _field1Controller.text,
-                      widget.config.field2Key: _field2Controller.text,
-                    });
-                  }
-                },
+                onPressed: _isLoadingAi
+                    ? null
+                    : () {
+                        if (_formKey.currentState!.validate()) {
+                          Navigator.of(context).pop({
+                            widget.config.field1Key: _field1Controller.text,
+                            widget.config.field2Key: _field2Controller.text,
+                          });
+                        }
+                      },
               ),
             ],
           ),

@@ -542,9 +542,22 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_hasChanges,
+      canPop: !_hasChanges && !_isLoadingAi,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+
+        // Prevent dismissal if AI is loading
+        if (_isLoadingAi) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please wait for AI to finish'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
 
         final shouldPop = await _confirmDiscard();
         if (shouldPop && context.mounted) {
@@ -566,6 +579,7 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                     labelText: widget.config.field1Label,
                     border: const OutlineInputBorder(),
                   ),
+                  enabled: !_isLoadingAi,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return widget.config.field1ValidationMessage;
@@ -757,7 +771,10 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
         actions: [
           Row(
             children: [
-              DSButton.text(label: 'Delete', onPressed: _confirmDelete),
+              DSButton.text(
+                label: 'Delete',
+                onPressed: _isLoadingAi ? null : _confirmDelete,
+              ),
               IconButton(
                 icon: Opacity(
                   opacity: _showAiPrompt ? 1.0 : 0.6,
@@ -769,7 +786,7 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                     height: 24,
                   ),
                 ),
-                onPressed: widget.hasApiKey ? _toggleAiPrompt : null,
+                onPressed: widget.hasApiKey && !_isLoadingAi ? _toggleAiPrompt : null,
                 tooltip: widget.hasApiKey
                     ? 'AI Assistant'
                     : 'AI Assistant (API key required)',
@@ -780,7 +797,7 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
                     final hasAssets = assetProvider.assets.isNotEmpty;
                     return IconButton(
                       icon: const Icon(Icons.add_photo_alternate),
-                      onPressed: hasAssets ? _insertImageTag : null,
+                      onPressed: hasAssets && !_isLoadingAi ? _insertImageTag : null,
                       tooltip: hasAssets
                           ? 'Insert Image'
                           : 'Insert Image (no assets available)',
@@ -790,16 +807,18 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
               const Spacer(),
               DSButton.text(
                 label: 'Close',
-                onPressed: () async {
-                  final shouldClose = await _confirmDiscard();
-                  if (shouldClose && context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                },
+                onPressed: _isLoadingAi
+                    ? null
+                    : () async {
+                        final shouldClose = await _confirmDiscard();
+                        if (shouldClose && context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
               ),
               DSButton.primary(
                 label: 'Save',
-                onPressed: !_hasChanges
+                onPressed: !_hasChanges || _isLoadingAi
                     ? null
                     : () async {
                         if (_formKey.currentState!.validate()) {
