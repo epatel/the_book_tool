@@ -123,3 +123,4 @@ export 'pages/plots_page.dart';
 export 'pages/misc_page.dart';
 export 'pages/prompts_page.dart';
 export 'pages/assets_page.dart';
+export 'utils/extensions.dart';

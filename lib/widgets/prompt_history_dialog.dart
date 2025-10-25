@@ -97,112 +97,98 @@ class _PromptHistoryDialogState extends State<PromptHistoryDialog> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _history.isEmpty
-                ? const Center(
-                    child: DSText.bodyLarge('No prompt history yet'),
-                  )
-                : ListView.builder(
-                    itemCount: _history.length,
-                    itemBuilder: (context, index) {
-                      final entry = _history[index];
+            ? const Center(
+                child: DSText.bodyLarge('No prompt history yet'),
+              )
+            : ListView.builder(
+                itemCount: _history.length,
+                itemBuilder: (context, index) {
+                  final entry = _history[index];
 
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppTheme.spacing12),
-                          child: Column(
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppTheme.spacing12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header row
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Header row
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      DSText.titleSmall(
-                                        entry.contextName,
-                                      ),
-                                      const SizedBox(
-                                        width: AppTheme.spacing8,
-                                      ),
-                                      if (entry.wasCommand)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: AppTheme.spacing8,
-                                            vertical: AppTheme.spacing4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primaryContainer,
-                                            borderRadius: BorderRadius.circular(
-                                              AppTheme.radiusSmall,
-                                            ),
-                                          ),
-                                          child: DSText.labelSmall(
-                                            'Command',
-                                            style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onPrimaryContainer,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
+                                  DSText.titleSmall(
+                                    '${entry.contextType.capitalize()} • ${entry.contextName}',
                                   ),
                                   const SizedBox(
-                                    height: AppTheme.spacing4,
+                                    width: AppTheme.spacing8,
                                   ),
-                                  DSText.bodySmall(
-                                    '${entry.contextType} • ${_formatTimestamp(entry.createdAt)}',
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
+                                  if (entry.wasCommand)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppTheme.spacing8,
+                                        vertical: AppTheme.spacing4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusSmall,
+                                        ),
+                                      ),
+                                      child: DSText.labelSmall(
+                                        'Command',
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimaryContainer,
+                                        ),
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
-                              const SizedBox(height: AppTheme.spacing8),
-                              // Prompt
-                              DSText.bodyMedium(
-                                entry.promptText,
-                                style: const TextStyle(
-                                  fontStyle: FontStyle.italic,
+                              const SizedBox(
+                                height: AppTheme.spacing4,
+                              ),
+                              DSText.bodySmall(
+                                entry.totalTokens != null
+                                    ? '${_formatTimestamp(entry.createdAt)} Tokens: ${entry.promptTokens ?? 0} + ${entry.completionTokens ?? 0} = ${entry.totalTokens}${entry.model != null ? ' (${entry.model})' : ''}'
+                                    : _formatTimestamp(entry.createdAt),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
                                 ),
                               ),
-                              if (entry.responseText != null) ...[
-                                const SizedBox(height: AppTheme.spacing12),
-                                DSText.labelSmall(
-                                  'Response:',
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                const SizedBox(height: AppTheme.spacing4),
-                                DSText.bodyMedium(entry.responseText!),
-                              ],
-                              // Token usage
-                              if (entry.totalTokens != null) ...[
-                                const SizedBox(height: AppTheme.spacing8),
-                                DSText.bodySmall(
-                                  'Tokens: ${entry.promptTokens ?? 0} + ${entry.completionTokens ?? 0} = ${entry.totalTokens}${entry.model != null ? ' (${entry.model})' : ''}',
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.5),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                          const SizedBox(height: AppTheme.spacing8),
+                          // Prompt
+                          DSText.bodyMedium(
+                            '"${entry.promptText}"',
+                            style: const TextStyle(
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          if (entry.responseText != null) ...[
+                            const SizedBox(height: AppTheme.spacing12),
+                            // DSText.labelSmall(
+                            //   'Response:',
+                            //   style: TextStyle(
+                            //     color: Theme.of(
+                            //       context,
+                            //     ).colorScheme.onSurface.withValues(alpha: 0.6),
+                            //   ),
+                            // ),
+                            // const SizedBox(height: AppTheme.spacing4),
+                            DSText.bodyMedium(entry.responseText!),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
       actions: [
         DSButton.primary(
