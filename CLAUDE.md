@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The Book Tool is a Flutter application for book writing, helping authors organize chapters, characters, plot ideas, miscellaneous notes, AI prompts, and image assets. The app uses a stationary navigation panel layout (not a drawer) with six main sections: Book (chapters), Characters, Plots, Notes, Prompts, and Assets.
 
+The app includes AI-assisted writing features with full prompt history tracking, allowing authors to leverage AI for content generation, editing assistance, and bulk entity creation through command mode.
+
 ## Development Commands
 
 ### Running the App
@@ -281,15 +283,51 @@ trailing: isCurrent
 - Delete UI uses `PopupMenuButton` pattern with confirmation dialog (see Dialog Patterns section)
 
 ### AI Integration
-- OpenAI API integration for AI-assisted writing
+- OpenAI API integration for AI-assisted writing (currently configured for `gpt-4o-2024-11-20`)
 - Context-aware prompts include all book data (chapters, characters, plots, notes)
 - Used in edit dialogs to improve or generate content
-- API key stored in `SharedPreferences`, managed via settings dialog
+- API key stored securely using `flutter_secure_storage`
+- All AI interactions automatically logged to `prompt_history` table
 - AI Context Prompt: Optional user-defined context stored in manifest (e.g., genre, style, themes)
   - Added to settings dialog as multi-line text field
   - Stored in manifest table with key `ContextPrompt`
   - Automatically inserted into AI system messages when present
   - No database version bump required - gracefully handles missing values with empty string default
+
+#### AI Prompt History
+The app maintains a comprehensive history of all AI interactions:
+
+**PromptHistory Model** (`lib/models/prompt_history.dart`):
+- `promptText`: The user's prompt
+- `responseText`: Generated summary of AI response (NOT raw response)
+- `contextType`: Type of entity being edited (e.g., "Chapter", "Plot", "Prompt")
+- `contextId`: Database ID of the entity (null for new items)
+- `contextName`: Name/title of the entity being edited
+- `wasCommand`: Boolean indicating if prompt was in command mode
+- `promptTokens`, `completionTokens`, `totalTokens`: Token usage tracking
+- `model`: AI model used (e.g., "gpt-4o-2024-11-20")
+- `createdAt`: Timestamp
+
+**Response Storage Strategy**:
+- For **command responses**: Parses JSON and stores human-readable summary
+  - Example: `"Created Characters: Carl Hamilton, Lisa Ericsson; Plots: Main Arc"`
+- For **text responses**: Stores first ~5 words with context
+  - Example: `"Chapter: Chapter 3, The hero entered the dark..."`
+- Summary generation happens at save time in `AIService._generateResponseSummary()`
+- This keeps database small and makes history readable without parsing
+
+**History Dialog** (`lib/widgets/prompt_history_dialog.dart`):
+- Accessible via history icon in AI Usage panel (AppShell)
+- Shows all prompts in reverse chronological order
+- Each entry displays: context type, entity name, timestamp, token usage, prompt, and response summary
+- Command mode prompts show a "Command" badge
+- "Clear All History" button with confirmation dialog
+- No per-item delete (by design - history is append-only audit trail)
+
+**Critical**: All `AIService.sendPrompt()` calls MUST include `contextType` and `contextName` parameters to ensure logging. Check:
+- `add_entity_dialog.dart`: ✓ Passes context
+- `edit_entity_dialog.dart`: ✓ Passes context with contextId
+- `prompts_page.dart`: ✓ Passes context with type "Prompt"
 
 #### Prompts System
 The prompts system allows users to save, organize, and reuse AI prompts:
