@@ -14,6 +14,7 @@ export 'package:url_launcher/url_launcher.dart';
 export 'package:flutter_tts/flutter_tts.dart';
 export 'package:file_selector/file_selector.dart';
 export 'package:desktop_drop/desktop_drop.dart';
+export 'package:intl/intl.dart' hide TextDirection;
 
 // Design System
 export 'design_system/theme.dart';
@@ -37,6 +38,7 @@ export 'models/character.dart';
 export 'models/plot.dart';
 export 'models/misc_note.dart';
 export 'models/prompt.dart';
+export 'models/prompt_history.dart';
 export 'models/asset.dart';
 export 'models/ai_command.dart';
 export 'models/model_pricing.dart';
@@ -65,6 +67,7 @@ export 'repositories/character_repository.dart';
 export 'repositories/plot_repository.dart';
 export 'repositories/misc_note_repository.dart';
 export 'repositories/prompt_repository.dart';
+export 'repositories/prompt_history_repository.dart';
 export 'repositories/asset_repository.dart';
 
 // Providers
@@ -106,6 +109,7 @@ export 'widgets/markdown_content.dart';
 export 'widgets/text_with_images.dart';
 export 'widgets/not_for_ai_badge.dart';
 export 'widgets/empty_state_display.dart';
+export 'widgets/prompt_history_dialog.dart';
 
 // Local files
 export 'app.dart';

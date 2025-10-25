@@ -100,6 +100,8 @@ class _PromptsPageState extends State<PromptsPage> {
           'bookData': bookData,
         },
         usageProvider: usageProvider,
+        contextType: 'Prompt',
+        contextName: prompt.title,
       );
 
       // Close loading dialog

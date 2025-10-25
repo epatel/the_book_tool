@@ -509,6 +509,27 @@ class _AppShellState extends State<AppShell> {
                                         .withValues(alpha: 0.4),
                                   ),
                                 ],
+                                const Spacer(),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.history,
+                                    size: 18,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                                  tooltip: 'Prompt History',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (dialogContext) =>
+                                          const PromptHistoryDialog(),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                             const SizedBox(height: 6),

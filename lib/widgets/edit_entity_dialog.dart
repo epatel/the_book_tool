@@ -437,6 +437,9 @@ class _EditEntityDialogState<T> extends State<EditEntityDialog<T>> {
         prompt: _aiPromptController.text,
         context: contextData,
         usageProvider: usageProvider,
+        contextType: widget.config.entityType,
+        contextId: widget.getId(widget.entity),
+        contextName: _field1Controller.text,
       );
 
       if (response != null && mounted) {

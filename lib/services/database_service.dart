@@ -148,6 +148,33 @@ class DatabaseService {
       }
     }
 
+    // Check and create prompt_history table
+    final promptHistoryTables = await db.query(
+      'sqlite_master',
+      where: 'type = ? AND name = ?',
+      whereArgs: ['table', 'prompt_history'],
+    );
+
+    if (promptHistoryTables.isEmpty) {
+      await db.execute('''
+        CREATE TABLE prompt_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          prompt_text TEXT NOT NULL,
+          response_text TEXT,
+          context_type TEXT NOT NULL,
+          context_id INTEGER,
+          context_name TEXT NOT NULL,
+          was_command INTEGER NOT NULL DEFAULT 0,
+          prompt_tokens INTEGER,
+          completion_tokens INTEGER,
+          total_tokens INTEGER,
+          model TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      debugPrint('Created prompt_history table');
+    }
+
     // Gracefully add new manifest keys if they don't exist
     await _ensureManifestKeys(db);
   }
@@ -313,6 +340,24 @@ class DatabaseService {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         thumbnail BLOB
+      )
+    ''');
+
+    // Create prompt_history table
+    await db.execute('''
+      CREATE TABLE prompt_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        prompt_text TEXT NOT NULL,
+        response_text TEXT,
+        context_type TEXT NOT NULL,
+        context_id INTEGER,
+        context_name TEXT NOT NULL,
+        was_command INTEGER NOT NULL DEFAULT 0,
+        prompt_tokens INTEGER,
+        completion_tokens INTEGER,
+        total_tokens INTEGER,
+        model TEXT,
+        created_at INTEGER NOT NULL
       )
     ''');
 
@@ -722,6 +767,15 @@ Enable rich text formatting in Settings:
     // Select COUNT(*) from assets
     final count = await db
         .query('assets', columns: ['COUNT(*)'])
+        .then((value) => value.first['COUNT(*)']);
+    return count as int;
+  }
+
+  static Future<int> numberOfPromptHistory() async {
+    final db = await database;
+    // Select COUNT(*) from prompt_history
+    final count = await db
+        .query('prompt_history', columns: ['COUNT(*)'])
         .then((value) => value.first['COUNT(*)']);
     return count as int;
   }

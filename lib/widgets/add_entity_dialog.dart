@@ -174,10 +174,15 @@ class _AddEntityDialogState extends State<AddEntityDialog> {
       };
 
       final aiService = AIService();
+      final contextName = _field1Controller.text.isEmpty
+          ? 'New ${widget.config.entityType}'
+          : _field1Controller.text;
       final response = await aiService.sendPrompt(
         prompt: _aiPromptController.text,
         context: contextData,
         usageProvider: usageProvider,
+        contextType: widget.config.entityType,
+        contextName: contextName,
       );
 
       if (response != null && mounted) {

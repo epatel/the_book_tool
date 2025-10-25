@@ -34,6 +34,9 @@ class AIService {
     required String prompt,
     Map<String, dynamic>? context,
     AIUsageProvider? usageProvider,
+    String? contextType,
+    int? contextId,
+    String? contextName,
   }) async {
     final client = await _getClient();
     if (client == null) {
@@ -125,6 +128,22 @@ class AIService {
           completionTokens,
           totalTokens,
           usageProvider,
+        );
+      }
+
+      // Log to prompt history if context provided
+      if (contextType != null && contextName != null) {
+        await _logPromptHistory(
+          prompt: prompt,
+          response: content,
+          contextType: contextType,
+          contextId: contextId,
+          contextName: contextName,
+          wasCommand: enableCommands,
+          promptTokens: promptTokens,
+          completionTokens: completionTokens,
+          totalTokens: totalTokens,
+          model: modelUsed,
         );
       }
 
@@ -339,6 +358,109 @@ Be conversational and thorough in your response.
       );
     } catch (e) {
       debugPrint('Error updating token usage: $e');
+    }
+  }
+
+  String _generateResponseSummary({
+    required String response,
+    required bool wasCommand,
+    required String contextType,
+    required String contextName,
+  }) {
+    // For command responses, parse and summarize the commands
+    if (wasCommand) {
+      try {
+        final commands = AICommand.parseFromResponse(response);
+        if (commands.isEmpty) {
+          return 'Command executed';
+        }
+
+        // Group commands by type
+        final chapters = <String>[];
+        final characters = <String>[];
+        final plots = <String>[];
+        final notes = <String>[];
+
+        for (final command in commands) {
+          if (command is AddChapterCommand) {
+            chapters.add(command.title);
+          } else if (command is AddCharacterCommand) {
+            characters.add(command.name);
+          } else if (command is AddPlotCommand) {
+            plots.add(command.title);
+          } else if (command is AddMiscNoteCommand) {
+            notes.add(command.title);
+          }
+        }
+
+        // Build summary
+        final parts = <String>[];
+        if (chapters.isNotEmpty) {
+          parts.add('Chapters: ${chapters.join(', ')}');
+        }
+        if (characters.isNotEmpty) {
+          parts.add('Characters: ${characters.join(', ')}');
+        }
+        if (plots.isNotEmpty) {
+          parts.add('Plots: ${plots.join(', ')}');
+        }
+        if (notes.isNotEmpty) {
+          parts.add('Notes: ${notes.join(', ')}');
+        }
+
+        return 'Created ${parts.join('; ')}';
+      } catch (e) {
+        return 'Command executed';
+      }
+    }
+
+    // For regular responses, show context type, name, and first ~5 words
+    final words = response.split(RegExp(r'\s+'));
+    final preview = words.take(5).join(' ');
+    final suffix = words.length > 5 ? '...' : '';
+
+    return '$contextType: $contextName, $preview$suffix';
+  }
+
+  Future<void> _logPromptHistory({
+    required String prompt,
+    required String response,
+    required String contextType,
+    int? contextId,
+    required String contextName,
+    required bool wasCommand,
+    int? promptTokens,
+    int? completionTokens,
+    int? totalTokens,
+    String? model,
+  }) async {
+    try {
+      // Generate summary instead of storing full response
+      final summary = _generateResponseSummary(
+        response: response,
+        wasCommand: wasCommand,
+        contextType: contextType,
+        contextName: contextName,
+      );
+
+      final historyRepo = PromptHistoryRepository();
+      final history = PromptHistory(
+        promptText: prompt,
+        responseText: summary,
+        contextType: contextType,
+        contextId: contextId,
+        contextName: contextName,
+        wasCommand: wasCommand,
+        promptTokens: promptTokens,
+        completionTokens: completionTokens,
+        totalTokens: totalTokens,
+        model: model,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await historyRepo.insert(history);
+      debugPrint('Logged prompt history for $contextType: $contextName');
+    } catch (e) {
+      debugPrint('Error logging prompt history: $e');
     }
   }
 }
