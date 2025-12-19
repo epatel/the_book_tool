@@ -7,6 +7,16 @@ const String openAiModel = 'gpt-4.1';
 // Source: https://platform.openai.com/docs/pricing
 const Map<String, ModelPricing> modelPricing = {
   // GPT-5 series
+  'gpt-5.2': ModelPricing(
+    name: 'gpt-5.2',
+    inputCostPerMillion: 1.75,
+    outputCostPerMillion: 14.00,
+  ),
+  'gpt-5.1': ModelPricing(
+    name: 'gpt-5.1',
+    inputCostPerMillion: 1.25,
+    outputCostPerMillion: 10.00,
+  ),
   'gpt-5': ModelPricing(
     name: 'gpt-5',
     inputCostPerMillion: 1.25,
