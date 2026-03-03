@@ -24,6 +24,7 @@ class _AppShellState extends State<AppShell> {
   ReadingFont _readingFont = ReadingFont.lora;
   double _fontSize = 14.0;
   String? _ttsVoiceId;
+  String _aiModel = openAiModel;
 
   @override
   void initState() {
@@ -111,6 +112,7 @@ class _AppShellState extends State<AppShell> {
         _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
         _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
         _ttsVoiceId = ttsVoiceId;
+        _aiModel = manifest['AIModel'] ?? openAiModel;
       });
     }
   }
@@ -217,6 +219,7 @@ class _AppShellState extends State<AppShell> {
         readingFont: _readingFont,
         fontSize: _fontSize,
         ttsVoiceId: _ttsVoiceId,
+        aiModel: _aiModel,
       ),
     );
 
@@ -228,6 +231,7 @@ class _AppShellState extends State<AppShell> {
         'ContextPrompt': result['contextPrompt'] as String,
         'ReadingFont': (result['readingFont'] as ReadingFont).name,
         'FontSize': (result['fontSize'] as double).toString(),
+        'AIModel': result['aiModel'] as String,
       });
       await _aiService.setApiKey(result['apiKey'] as String);
       await themeProvider.setThemeMode(result['themeMode'] as ThemeMode);
@@ -451,7 +455,7 @@ class _AppShellState extends State<AppShell> {
                 Consumer<AIUsageProvider>(
                   builder: (context, usageProvider, child) {
                     // Get pricing for current model
-                    final pricing = getCurrentModelPricing();
+                    final pricing = getModelPricing(_aiModel);
 
                     // Calculate and format cost
                     final formattedCost = pricing.formatCost(

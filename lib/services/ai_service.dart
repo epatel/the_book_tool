@@ -44,10 +44,12 @@ class AIService {
     }
 
     try {
-      // Get context prompt from manifest
+      // Get context prompt and AI model from manifest
       final manifestRepo = ManifestRepository();
       final contextPrompt =
           (await manifestRepo.get('ContextPrompt'))?.value ?? '';
+      final aiModel =
+          (await manifestRepo.get('AIModel'))?.value ?? openAiModel;
 
       final enableCommands = context?['enableCommands'] == true;
       final hasCurrentItem = context?['currentItem'] != null;
@@ -95,7 +97,7 @@ class AIService {
 
       final response = await client.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: const ChatCompletionModel.modelId(openAiModel),
+          model: ChatCompletionModel.modelId(aiModel),
           messages: [
             ChatCompletionMessage.system(content: systemMessage),
             ChatCompletionMessage.user(

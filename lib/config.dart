@@ -1,7 +1,7 @@
 import 'package:the_book_tool/index.dart';
 
 // Config for the app
-const String openAiModel = 'gpt-4.1';
+const String openAiModel = 'gpt-5.2';
 
 // OpenAI model pricing (Standard tier, per 1M tokens)
 // Source: https://platform.openai.com/docs/pricing
@@ -90,12 +90,18 @@ const Map<String, ModelPricing> modelPricing = {
   ),
 };
 
-// Helper function to get pricing for the current model
-ModelPricing getCurrentModelPricing() {
-  return modelPricing[openAiModel] ??
+// Helper function to get pricing for a specific model (or default)
+ModelPricing getModelPricing(String? model) {
+  final modelName = model ?? openAiModel;
+  return modelPricing[modelName] ??
       const ModelPricing(
-        name: 'gpt-4.1',
-        inputCostPerMillion: 2.00,
-        outputCostPerMillion: 8.00,
+        name: 'gpt-5.2',
+        inputCostPerMillion: 1.75,
+        outputCostPerMillion: 14.00,
       );
+}
+
+// Helper function to get pricing for the default model
+ModelPricing getCurrentModelPricing() {
+  return getModelPricing(null);
 }

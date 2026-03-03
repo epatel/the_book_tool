@@ -10,6 +10,7 @@ class SettingsDialog extends StatefulWidget {
   final ReadingFont readingFont;
   final double fontSize;
   final String? ttsVoiceId;
+  final String aiModel;
 
   const SettingsDialog({
     super.key,
@@ -22,6 +23,7 @@ class SettingsDialog extends StatefulWidget {
     required this.readingFont,
     this.fontSize = 14.0,
     this.ttsVoiceId,
+    this.aiModel = 'gpt-5.2',
   });
 
   @override
@@ -39,6 +41,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late ReadingFont _readingFont;
   late double _fontSize;
   String? _ttsVoiceId;
+  late String _aiModel;
   String? _ttsVoiceLocale;
   List<Map<String, String>> _availableVoices = [];
   bool _loadingVoices = true;
@@ -58,6 +61,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _readingFont = widget.readingFont;
     _fontSize = widget.fontSize;
     _ttsVoiceId = widget.ttsVoiceId;
+    _aiModel = widget.aiModel;
 
     _loadVoices();
   }
@@ -112,11 +116,12 @@ class _SettingsDialogState extends State<SettingsDialog> {
       title: const DSText.titleLarge('Settings'),
       content: Form(
         key: _formKey,
-        child: SizedBox(
-          width: 500,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -164,6 +169,36 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         }
                       },
                       tooltip: 'Get API Key',
+                    ),
+                  ),
+                ],
+              ),
+              const DSSpacing.spacing16(),
+              Row(
+                children: [
+                  const Expanded(flex: 1, child: DSText.bodyMedium('AI Model')),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<String>(
+                      value: _aiModel,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: modelPricing.keys
+                          .map(
+                            (model) => DropdownMenuItem(
+                              value: model,
+                              child: Text(model),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _aiModel = value;
+                          });
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -384,7 +419,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   ),
                 ],
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -408,6 +444,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 'fontSize': _fontSize,
                 'ttsVoiceId': _ttsVoiceId,
                 'ttsVoiceLocale': _ttsVoiceLocale,
+                'aiModel': _aiModel,
               });
             }
           },
