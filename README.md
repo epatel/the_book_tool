@@ -2,6 +2,8 @@
 
 A Flutter desktop application for book writing. It helps authors organize chapters, characters, plot ideas, notes, reusable AI prompts, and image assets — with AI-assisted writing built in.
 
+![The Book Tool](Screenshot.png)
+
 ## Features
 
 - **Six workspaces** — Book (chapters), Characters, Plots, Notes, Prompts, and Assets, navigated from a stationary side panel.
