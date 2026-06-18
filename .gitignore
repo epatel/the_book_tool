@@ -43,3 +43,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets and credentials
+*.env
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+secrets.*
+credentials.*
+
+# Local databases / book data
+*.db
+*.sqlite
+*.sqlite3
