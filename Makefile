@@ -86,10 +86,13 @@ release:
 	codesign -dvv "$$APP" 2>&1 | grep -E "Authority|TeamIdentifier|flags" ; \
 	echo "##### Exported $$APP #####"
 
-# Checked before `release` runs, so a missing profile fails in a second
-# instead of after a full archive and export.
+# Checked before `release` runs, so a missing profile fails in seconds
+# instead of after a full archive and export. notarytool stores profiles in a
+# keychain the `security` CLI cannot search, so ask notarytool itself; that
+# costs a network round trip but is the only reliable answer.
 notary_check:
-	if ! security find-generic-password -s "com.apple.gke.notary.tool" -a "$(NOTARY_PROFILE)" >/dev/null 2>&1 ; then \
+	if xcrun notarytool history --keychain-profile "$(NOTARY_PROFILE)" 2>&1 \
+		| grep -q "No Keychain password item found" ; then \
 		echo "No notarization profile '$(NOTARY_PROFILE)' found. Run: make notary_creds" ; \
 		exit 1 ; \
 	fi
@@ -112,7 +115,18 @@ notarize: notary_check release
 
 # Prompts for an app-specific password from appleid.apple.com
 # (Sign-In and Security -> App-Specific Passwords).
+#
+# Reads the Apple ID here and binds notarytool's stdin to the terminal, so only
+# the password uses notarytool's own secure prompt. Without the /dev/tty
+# redirect notarytool traps (SIGTRAP) instead of erroring whenever stdin is not
+# a terminal, which is what happens when this runs through the piped `select`
+# menu.
 notary_creds:
 	echo "##### Storing notarization credentials as '$(NOTARY_PROFILE)' #####"
 	echo "Needs your Apple ID and an app-specific password from appleid.apple.com"
-	xcrun notarytool store-credentials "$(NOTARY_PROFILE)" --team-id $(TEAM_ID)
+	echo "(Sign-In and Security -> App-Specific Passwords)"
+	printf "Apple ID: " > /dev/tty ; \
+	read APPLE_ID < /dev/tty ; \
+	xcrun notarytool store-credentials "$(NOTARY_PROFILE)" \
+		--apple-id "$$APPLE_ID" \
+		--team-id $(TEAM_ID) < /dev/tty
