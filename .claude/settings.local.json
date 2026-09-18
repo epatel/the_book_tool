@@ -22,7 +22,20 @@
       "Read(//Users/epatel/Desktop/**)",
       "mcp__dart__pub_dev_search",
       "mcp__dart__pub",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:openai.com)",
+      "WebFetch(domain:costgoat.com)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(xargs cat:*)",
+      "mcp__dart__hover",
+      "Bash(rtk ls *)",
+      "Bash(rtk read *)",
+      "Bash(grep -iE '\\\\.\\(env|pem|key|p12|keystore|jks|crt\\)$|secret|credential|\\\\.env')",
+      "Bash(grep -E '\\(^|/\\)\\\\.gitignore$')",
+      "Bash(grep -iE '\\\\.\\(db|sqlite|env|pem|key|p12|keystore\\)$')",
+      "Bash(grep -iE '\\\\.\\(db|sqlite|sqlite3\\)$')"
     ],
     "deny": [],
     "ask": []

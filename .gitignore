@@ -60,3 +60,4 @@ credentials.*
 *.db
 *.sqlite
 *.sqlite3
+/vec
