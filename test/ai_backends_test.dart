@@ -264,11 +264,74 @@ void main() {
       });
     });
 
+    test('a sidecar with no providers reports why, not "Connected"', () async {
+      // Reachable but serving nothing: every completion would return 503,
+      // so Test must not claim success.
+      final server = await _serve((request) async {
+        _json(request, 200, {
+          'status': 'ok',
+          'providers': <String, dynamic>{},
+          'unavailable': {
+            'claude-agent-sdk': 'not installed (pip install claude-agent-sdk)',
+            'anthropic': 'ANTHROPIC_API_KEY is not set',
+          },
+        });
+      });
+      addTearDown(server.close);
+
+      final backend = SidecarBackend(
+        baseUrl: 'http://127.0.0.1:${server.port}',
+      );
+      addTearDown(backend.dispose);
+
+      final health = await backend.check();
+      expect(health.ok, isFalse);
+      expect(health.message, contains('no providers available'));
+      expect(health.message, contains('pip install claude-agent-sdk'));
+      expect(health.message, contains('ANTHROPIC_API_KEY is not set'));
+    });
+
+    test('surfaces the 503 body when no provider can serve', () async {
+      final server = await _serve((request) async {
+        _json(request, 503, {
+          'error': 'No providers available. anthropic: ANTHROPIC_API_KEY is not set',
+        });
+      });
+      addTearDown(server.close);
+
+      final backend = SidecarBackend(
+        baseUrl: 'http://127.0.0.1:${server.port}',
+      );
+      addTearDown(backend.dispose);
+
+      expect(
+        () => backend.send(
+          const AIBackendRequest(
+            systemMessage: 's',
+            prompt: 'p',
+            model: 'm',
+          ),
+        ),
+        throwsA(
+          isA<AIBackendException>().having(
+            (e) => e.message,
+            'message',
+            contains('ANTHROPIC_API_KEY is not set'),
+          ),
+        ),
+      );
+    });
+
     test('sends a bearer token when one is configured', () async {
       String? auth;
       final server = await _serve((request) async {
         auth = request.headers.value('authorization');
-        _json(request, 200, {'status': 'ok', 'providers': <String, dynamic>{}});
+        _json(request, 200, {
+          'status': 'ok',
+          'providers': {
+            'anthropic': {'models': <String>['claude-opus-5']},
+          },
+        });
       });
       addTearDown(server.close);
 

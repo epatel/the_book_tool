@@ -138,11 +138,24 @@ class SidecarBackend implements AIBackend {
         }
       }
 
+      // Reachable but serving nothing is a failure worth showing: every
+      // completion would come back 503. Report why, from /health.
+      if (names.isEmpty) {
+        final blocked = body['unavailable'];
+        final reasons = blocked is Map<String, dynamic>
+            ? blocked.entries.map((e) => '${e.key}: ${e.value}').join('; ')
+            : '';
+        return AIBackendHealth(
+          ok: false,
+          message: reasons.isEmpty
+              ? 'Running, but it has no providers available.'
+              : 'Running, but no providers available — $reasons',
+        );
+      }
+
       return AIBackendHealth(
         ok: true,
-        message: names.isEmpty
-            ? 'Connected'
-            : 'Connected · ${names.join(', ')}',
+        message: 'Connected · ${names.join(', ')}',
         models: models,
       );
     } catch (e) {

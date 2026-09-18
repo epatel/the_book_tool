@@ -25,6 +25,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import sys
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -66,9 +67,16 @@ class Provider:
     name: str = "provider"
     models: list[str] = []
 
-    def available(self) -> bool:
-        """Whether this provider's dependencies are importable right now."""
+    def unavailable_reason(self) -> str | None:
+        """None when this provider can serve requests, else why it cannot.
+
+        Re-evaluated on every /health, so installing a package is picked up
+        without restarting the server.
+        """
         raise NotImplementedError
+
+    def available(self) -> bool:
+        return self.unavailable_reason() is None
 
     def complete(
         self, system: str, prompt: str, model: str, max_tokens: int
@@ -89,12 +97,16 @@ class ClaudeAgentSDKProvider(Provider):
     name = "claude-agent-sdk"
     models = ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"]
 
-    def available(self) -> bool:
+    def unavailable_reason(self) -> str | None:
         try:
             import claude_agent_sdk  # noqa: F401
         except ImportError:
-            return False
-        return True
+            return "not installed (pip install claude-agent-sdk)"
+        # The SDK shells out to the Claude Code CLI, so a missing `claude`
+        # fails at request time rather than import time.
+        if shutil.which("claude") is None:
+            return "claude CLI not found (install Claude Code and log in)"
+        return None
 
     def complete(
         self, system: str, prompt: str, model: str, max_tokens: int
@@ -157,12 +169,14 @@ class AnthropicProvider(Provider):
     name = "anthropic"
     models = ["claude-opus-5", "claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5"]
 
-    def available(self) -> bool:
+    def unavailable_reason(self) -> str | None:
         try:
             import anthropic  # noqa: F401
         except ImportError:
-            return False
-        return bool(os.environ.get("ANTHROPIC_API_KEY"))
+            return "not installed (pip install anthropic)"
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            return "ANTHROPIC_API_KEY is not set"
+        return None
 
     def complete(
         self, system: str, prompt: str, model: str, max_tokens: int
@@ -203,12 +217,12 @@ class LiteLLMProvider(Provider):
     name = "litellm"
     models: list[str] = []  # Too many to enumerate; the user types one.
 
-    def available(self) -> bool:
+    def unavailable_reason(self) -> str | None:
         try:
             import litellm  # noqa: F401
         except ImportError:
-            return False
-        return True
+            return "not installed (pip install litellm)"
+        return None
 
     def complete(
         self, system: str, prompt: str, model: str, max_tokens: int
@@ -252,7 +266,23 @@ class Config:
     host: str = "127.0.0.1"
     port: int = 8787
     token: str = ""
-    providers: dict[str, Provider] = field(default_factory=dict)
+    providers: list[Provider] = field(default_factory=list)
+
+    def resolve(self) -> tuple[dict[str, Provider], dict[str, str]]:
+        """Split providers into usable ones and reasons the rest are not.
+
+        Recomputed per request, so `pip install`ing a provider takes effect
+        without a restart.
+        """
+        usable: dict[str, Provider] = {}
+        blocked: dict[str, str] = {}
+        for provider in self.providers:
+            reason = provider.unavailable_reason()
+            if reason is None:
+                usable[provider.name] = provider
+            else:
+                blocked[provider.name] = reason
+        return usable, blocked
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -282,14 +312,16 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if self.path.rstrip("/") == "/health":
+            usable, blocked = self.config.resolve()
             self._send(
                 200,
                 {
                     "status": "ok",
                     "providers": {
                         name: {"models": provider.models}
-                        for name, provider in self.config.providers.items()
+                        for name, provider in usable.items()
                     },
+                    "unavailable": blocked,
                 },
             )
             return
@@ -312,14 +344,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": f"Malformed request body: {e}"})
             return
 
-        providers = self.config.providers
+        providers, blocked = self.config.resolve()
         if not providers:
+            detail = "; ".join(f"{n}: {r}" for n, r in blocked.items())
             self._send(
                 503,
-                {
-                    "error": "No providers available. Install claude-agent-sdk, "
-                    "anthropic, or litellm."
-                },
+                {"error": f"No providers available. {detail}"},
             )
             return
 
@@ -374,18 +404,17 @@ def main() -> int:
         format="%(asctime)s %(levelname)s %(message)s",
     )
 
-    available = {p.name: p for p in PROVIDERS if p.available()}
-    if not available:
-        log.warning(
-            "No providers available. Install one of: claude-agent-sdk, "
-            "anthropic (with ANTHROPIC_API_KEY), litellm."
-        )
-    else:
-        log.info("Providers: %s", ", ".join(available))
-
     config = Config(
-        host=args.host, port=args.port, token=args.token, providers=available
+        host=args.host, port=args.port, token=args.token, providers=PROVIDERS
     )
+
+    usable, blocked = config.resolve()
+    for name, reason in blocked.items():
+        log.warning("Provider %s unavailable: %s", name, reason)
+    if usable:
+        log.info("Providers: %s", ", ".join(usable))
+    else:
+        log.warning("No providers available - every request will return 503.")
 
     handler = type("BoundHandler", (Handler,), {"config": config})
     server = ThreadingHTTPServer((config.host, config.port), handler)

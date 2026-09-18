@@ -61,3 +61,8 @@ credentials.*
 *.sqlite
 *.sqlite3
 /vec
+
+# Python sidecar virtualenvs and caches
+sidecar/venv/
+sidecar/.venv/
+sidecar/__pycache__/

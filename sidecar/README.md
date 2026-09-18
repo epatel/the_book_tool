@@ -23,7 +23,20 @@ source .venv/bin/activate
 pip install -r requirements.txt   # or just the one provider you want
 ```
 
-Providers are picked up only if importable, so installing a subset is fine.
+Providers are picked up only if usable, so installing a subset is fine. A
+provider that cannot run says why — at startup, in `/health`, and in the error
+body of any request that needed it:
+
+```
+WARNING Provider claude-agent-sdk unavailable: not installed (pip install claude-agent-sdk)
+WARNING Provider anthropic unavailable: ANTHROPIC_API_KEY is not set
+WARNING No providers available - every request will return 503.
+```
+
+Availability is re-checked on every `/health`, so after installing a provider
+you can just press **Test** again instead of restarting the server. A newly set
+environment variable still needs a restart, since the process reads its
+environment once.
 
 | Provider | Install | Credentials |
 |---|---|---|
@@ -54,14 +67,16 @@ Settings → **AI** tab:
 - **Sidecar provider**: `claude-agent-sdk`
 - **AI Model**: `claude-opus-5`
 - Press **Test** — it should read `Connected · claude-agent-sdk, anthropic`,
-  and the model dropdown fills with what the sidecar advertises.
+  and the model dropdown fills with what the sidecar advertises. If it instead
+  reads `Running, but no providers available`, it names what to install.
 
 ## Protocol
 
 ```
 GET /health
   -> 200 {"status": "ok",
-          "providers": {"claude-agent-sdk": {"models": ["claude-opus-5", ...]}}}
+          "providers": {"claude-agent-sdk": {"models": ["claude-opus-5", ...]}},
+          "unavailable": {"anthropic": "ANTHROPIC_API_KEY is not set"}}
 
 POST /v1/complete
   {"provider": "claude-agent-sdk", "model": "claude-opus-5",
@@ -87,12 +102,15 @@ class MyProvider(Provider):
     name = "my-provider"
     models = ["my-model-v1"]
 
-    def available(self) -> bool:
-        return True
+    def unavailable_reason(self) -> str | None:
+        return None  # or a string explaining what is missing
 
     def complete(self, system, prompt, model, max_tokens) -> Completion:
         return Completion(text="...", model=model)
 ```
+
+Return a reason rather than a bare False — it is what the app shows when the
+sidecar has nothing to serve.
 
 ## Security note
 
