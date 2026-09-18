@@ -20,14 +20,14 @@ class _PlotsPageState extends State<PlotsPage> {
 
   Future<void> _showAddPlotDialog() async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (dialogContext) => AddPlotDialog(
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 
@@ -41,7 +41,7 @@ class _PlotsPageState extends State<PlotsPage> {
 
   Future<void> _showEditPlotDialog(Plot plot) async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -49,7 +49,7 @@ class _PlotsPageState extends State<PlotsPage> {
       context: context,
       builder: (dialogContext) => EditPlotDialog(
         plot: plot,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 

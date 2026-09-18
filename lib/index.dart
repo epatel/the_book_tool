@@ -41,6 +41,7 @@ export 'models/prompt.dart';
 export 'models/prompt_history.dart';
 export 'models/asset.dart';
 export 'models/ai_command.dart';
+export 'models/ai_backend_kind.dart';
 export 'models/model_pricing.dart';
 export 'models/search_result.dart';
 
@@ -50,6 +51,10 @@ export 'services/database_manager.dart';
 export 'services/window_preferences_service.dart';
 export 'services/ui_preferences_service.dart';
 export 'services/book_data_service.dart';
+export 'services/ai_backends/ai_backend.dart';
+export 'services/ai_backends/openai_compatible_backend.dart';
+export 'services/ai_backends/anthropic_backend.dart';
+export 'services/ai_backends/sidecar_backend.dart';
 export 'services/ai_service.dart';
 export 'services/ai_command_executor.dart';
 export 'services/pdf_service.dart';

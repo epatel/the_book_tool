@@ -20,14 +20,14 @@ class _MiscPageState extends State<MiscPage> {
 
   Future<void> _showAddNoteDialog() async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (dialogContext) => AddMiscNoteDialog(
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 
@@ -41,7 +41,7 @@ class _MiscPageState extends State<MiscPage> {
 
   Future<void> _showEditNoteDialog(MiscNote note) async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -49,7 +49,7 @@ class _MiscPageState extends State<MiscPage> {
       context: context,
       builder: (dialogContext) => EditMiscNoteDialog(
         note: note,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 

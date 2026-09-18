@@ -10,6 +10,10 @@ class AIResponse {
   final int? totalTokens;
   final String? model;
 
+  /// Cost reported by the backend itself, when it prices its own calls.
+  /// Null means "derive it from [modelPricing]".
+  final double? costUsd;
+
   const AIResponse({
     this.text,
     this.commands = const [],
@@ -17,6 +21,7 @@ class AIResponse {
     this.completionTokens,
     this.totalTokens,
     this.model,
+    this.costUsd,
   });
 
   bool get hasText => text != null && text!.isNotEmpty;
@@ -24,6 +29,7 @@ class AIResponse {
 
   /// Calculate estimated cost based on model and tokens
   double get estimatedCost {
+    if (costUsd != null) return costUsd!;
     if (promptTokens == null || completionTokens == null) return 0.0;
 
     // Get pricing for the model
@@ -36,6 +42,11 @@ class AIResponse {
   }
 
   String get formattedCost {
+    if (costUsd != null) {
+      return costUsd! < 0.01
+          ? '\$${(costUsd! * 100).toStringAsFixed(4)}¢'
+          : '\$${costUsd!.toStringAsFixed(4)}';
+    }
     if (promptTokens == null || completionTokens == null) return '\$0.00';
 
     // Get pricing for the model

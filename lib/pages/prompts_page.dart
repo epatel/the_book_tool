@@ -209,7 +209,7 @@ class _PromptsPageState extends State<PromptsPage> {
 
   Future<void> _showAddPromptDialog() async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -217,7 +217,7 @@ class _PromptsPageState extends State<PromptsPage> {
       context: context,
       builder: (dialogContext) => EditPromptDialog(
         prompt: null, // null means "add new prompt"
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 
@@ -250,7 +250,7 @@ class _PromptsPageState extends State<PromptsPage> {
 
   Future<void> _showEditPromptDialog(Prompt prompt) async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -258,7 +258,7 @@ class _PromptsPageState extends State<PromptsPage> {
       context: context,
       builder: (dialogContext) => EditPromptDialog(
         prompt: prompt,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 

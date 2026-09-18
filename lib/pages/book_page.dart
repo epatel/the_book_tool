@@ -32,14 +32,14 @@ class BookPageState extends State<BookPage> {
 
   Future<void> _showAddChapterDialog() async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (dialogContext) => AddChapterDialog(
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 
@@ -61,7 +61,7 @@ class BookPageState extends State<BookPage> {
     if (!mounted) return;
 
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -69,7 +69,7 @@ class BookPageState extends State<BookPage> {
       context: context,
       builder: (dialogContext) => EditChapterDialog(
         chapter: chapter,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 

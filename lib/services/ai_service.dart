@@ -1,33 +1,120 @@
 import 'package:the_book_tool/index.dart';
 
 class AIService {
-  static const String _keyApiKey = 'openai_api_key';
   static final _secureStorage = const FlutterSecureStorage();
-  OpenAIClient? _client;
 
-  Future<String?> getApiKey() async {
-    return await _secureStorage.read(key: _keyApiKey);
+  AIBackend? _backend;
+
+  /// Identity of the config [_backend] was built from, so we can tell when a
+  /// settings change invalidates it.
+  String? _backendSignature;
+
+  /// Which backend the current book is configured to use.
+  Future<AIBackendKind> getBackendKind() async {
+    final manifestRepo = ManifestRepository();
+    return AIBackendKind.fromString(
+      (await manifestRepo.get('AIBackend'))?.value,
+    );
   }
 
-  Future<void> setApiKey(String apiKey) async {
+  /// Read the stored credential for [kind], defaulting to the active backend.
+  Future<String?> getApiKey([AIBackendKind? kind]) async {
+    final target = kind ?? await getBackendKind();
+    return await _secureStorage.read(key: target.secureStorageKey);
+  }
+
+  /// Store (or clear, when [apiKey] is empty) the credential for [kind].
+  Future<void> setApiKey(String apiKey, [AIBackendKind? kind]) async {
+    final target = kind ?? await getBackendKind();
     if (apiKey.isEmpty) {
-      await _secureStorage.delete(key: _keyApiKey);
+      await _secureStorage.delete(key: target.secureStorageKey);
     } else {
-      await _secureStorage.write(key: _keyApiKey, value: apiKey);
+      await _secureStorage.write(key: target.secureStorageKey, value: apiKey);
     }
-    _client = null; // Reset client to use new API key
+    invalidateBackend();
   }
 
-  Future<OpenAIClient?> _getClient() async {
-    if (_client != null) return _client;
+  /// Whether AI features should be offered.
+  ///
+  /// Not the same as "has an API key": the sidecar backend authenticates
+  /// itself, so being pointed at one is enough.
+  Future<bool> isConfigured() async {
+    final kind = await getBackendKind();
+    if (!kind.usesApiKey) return true;
 
-    final apiKey = await getApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      return null;
+    final apiKey = await getApiKey(kind);
+    return apiKey != null && apiKey.isNotEmpty;
+  }
+
+  /// Drop the cached backend so the next call rebuilds it from settings.
+  void invalidateBackend() {
+    _backend?.dispose();
+    _backend = null;
+    _backendSignature = null;
+  }
+
+  /// Build a backend from explicit values, without touching stored settings.
+  /// Used by the settings dialog to test a configuration before saving it.
+  static AIBackend buildBackend({
+    required AIBackendKind kind,
+    required String apiKey,
+    required String baseUrl,
+    String sidecarProvider = '',
+  }) {
+    return switch (kind) {
+      AIBackendKind.openAiCompatible => OpenAICompatibleBackend(
+        apiKey: apiKey,
+        baseUrl: baseUrl.isEmpty ? defaultApiUrl : baseUrl,
+      ),
+      AIBackendKind.anthropic => AnthropicBackend(
+        apiKey: apiKey,
+        baseUrl: baseUrl.isEmpty ? defaultAnthropicApiUrl : baseUrl,
+      ),
+      AIBackendKind.sidecar => SidecarBackend(
+        baseUrl: baseUrl.isEmpty ? defaultSidecarUrl : baseUrl,
+        token: apiKey,
+        provider: sidecarProvider,
+      ),
+    };
+  }
+
+  Future<AIBackend?> _getBackend() async {
+    final kind = await getBackendKind();
+    if (!await isConfigured()) return null;
+
+    final manifestRepo = ManifestRepository();
+    final apiKey = await getApiKey(kind) ?? '';
+    final baseUrl =
+        (await manifestRepo.get(kind.urlManifestKey))?.value ??
+        defaultUrlForBackend(kind);
+    final sidecarProvider =
+        (await manifestRepo.get('AISidecarProvider'))?.value ??
+        defaultSidecarProvider;
+
+    final signature = '${kind.name}|$baseUrl|$sidecarProvider|${apiKey.hashCode}';
+    if (_backend != null && _backendSignature == signature) {
+      return _backend;
     }
 
-    _client = OpenAIClient(apiKey: apiKey);
-    return _client;
+    _backend?.dispose();
+    _backendSignature = signature;
+    _backend = buildBackend(
+      kind: kind,
+      apiKey: apiKey,
+      baseUrl: baseUrl,
+      sidecarProvider: sidecarProvider,
+    );
+    return _backend;
+  }
+
+  /// Resolve the model to use for the active backend.
+  Future<String> getActiveModel() async {
+    final kind = await getBackendKind();
+    final manifestRepo = ManifestRepository();
+    final stored = (await manifestRepo.get(kind.modelManifestKey))?.value;
+    return (stored == null || stored.isEmpty)
+        ? defaultModelForBackend(kind)
+        : stored;
   }
 
   Future<AIResponse?> sendPrompt({
@@ -38,8 +125,8 @@ class AIService {
     int? contextId,
     String? contextName,
   }) async {
-    final client = await _getClient();
-    if (client == null) {
+    final backend = await _getBackend();
+    if (backend == null) {
       return null;
     }
 
@@ -48,8 +135,7 @@ class AIService {
       final manifestRepo = ManifestRepository();
       final contextPrompt =
           (await manifestRepo.get('ContextPrompt'))?.value ?? '';
-      final aiModel =
-          (await manifestRepo.get('AIModel'))?.value ?? openAiModel;
+      final aiModel = await getActiveModel();
 
       final enableCommands = context?['enableCommands'] == true;
       final hasCurrentItem = context?['currentItem'] != null;
@@ -95,31 +181,26 @@ class AIService {
               );
       }
 
-      final response = await client.createChatCompletion(
-        request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId(aiModel),
-          messages: [
-            ChatCompletionMessage.system(content: systemMessage),
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(prompt),
-            ),
-          ],
-          // GPT-5 optimized parameters for creative writing
-          maxCompletionTokens: 4096, // Allow longer creative responses
+      final result = await backend.send(
+        AIBackendRequest(
+          systemMessage: systemMessage,
+          prompt: prompt,
+          model: aiModel,
+          maxTokens: aiMaxOutputTokens,
         ),
       );
 
-      final content = response.choices.first.message.content;
-      if (content == null || content.isEmpty) {
+      final content = result.content;
+      if (content.isEmpty) {
         return null;
       }
 
       // Extract usage information
-      final usage = response.usage;
-      final promptTokens = usage?.promptTokens;
-      final completionTokens = usage?.completionTokens;
-      final totalTokens = usage?.totalTokens;
-      final modelUsed = response.model;
+      final promptTokens = result.promptTokens;
+      final completionTokens = result.completionTokens;
+      final totalTokens = result.totalTokens;
+      final modelUsed = result.model;
+      final costUsd = result.costUsd;
 
       // Update cumulative token usage in manifest
       if (promptTokens != null &&
@@ -160,6 +241,7 @@ class AIService {
             completionTokens: completionTokens,
             totalTokens: totalTokens,
             model: modelUsed,
+            costUsd: costUsd,
           );
         }
       }
@@ -171,7 +253,11 @@ class AIService {
         completionTokens: completionTokens,
         totalTokens: totalTokens,
         model: modelUsed,
+        costUsd: costUsd,
       );
+    } on AIBackendException catch (e) {
+      debugPrint('AI Backend Error: ${e.message}');
+      return null;
     } catch (e) {
       debugPrint('AI Service Error: $e');
       return null;

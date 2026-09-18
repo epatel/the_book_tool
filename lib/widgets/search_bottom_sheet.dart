@@ -106,7 +106,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
     SearchResult result,
   ) async {
     final aiService = AIService();
-    final apiKey = await aiService.getApiKey();
+    final aiEnabled = await aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -114,7 +114,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       context: context,
       builder: (dialogContext) => EditChapterDialog(
         chapter: chapter,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
         searchQuery: result.searchQuery,
         searchLineNumber: result.lineNumber,
       ),
@@ -126,7 +126,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
     SearchResult result,
   ) async {
     final aiService = AIService();
-    final apiKey = await aiService.getApiKey();
+    final aiEnabled = await aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -134,7 +134,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       context: context,
       builder: (dialogContext) => EditCharacterDialog(
         character: character,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
         searchQuery: result.searchQuery,
         searchLineNumber: result.lineNumber,
       ),
@@ -143,7 +143,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
 
   Future<void> _showEditPlotDialog(Plot plot, SearchResult result) async {
     final aiService = AIService();
-    final apiKey = await aiService.getApiKey();
+    final aiEnabled = await aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -151,7 +151,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       context: context,
       builder: (dialogContext) => EditPlotDialog(
         plot: plot,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
         searchQuery: result.searchQuery,
         searchLineNumber: result.lineNumber,
       ),
@@ -163,7 +163,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
     SearchResult result,
   ) async {
     final aiService = AIService();
-    final apiKey = await aiService.getApiKey();
+    final aiEnabled = await aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -171,7 +171,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet> {
       context: context,
       builder: (dialogContext) => EditMiscNoteDialog(
         note: note,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
         searchQuery: result.searchQuery,
         searchLineNumber: result.lineNumber,
       ),

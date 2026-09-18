@@ -19,12 +19,23 @@ class _AppShellState extends State<AppShell> {
   bool _markdownEnabled = false;
   String _bookName = '';
   String _author = '';
-  String _apiKey = '';
   String _contextPrompt = '';
   ReadingFont _readingFont = ReadingFont.lora;
   double _fontSize = 14.0;
   String? _ttsVoiceId;
-  String _aiModel = openAiModel;
+  AIBackendKind _backendKind = AIBackendKind.openAiCompatible;
+  Map<AIBackendKind, AIBackendSettings> _backendSettings = {};
+  String _sidecarProvider = defaultSidecarProvider;
+
+  /// Model of the active backend, used for the usage panel's cost estimate.
+  String get _activeModel =>
+      _backendSettings[_backendKind]?.model ??
+      defaultModelForBackend(_backendKind);
+
+  /// Whether AI features are usable. The sidecar needs no key of its own.
+  bool get _aiConfigured =>
+      !_backendKind.usesApiKey ||
+      (_backendSettings[_backendKind]?.apiKey.isNotEmpty ?? false);
 
   @override
   void initState() {
@@ -100,19 +111,34 @@ class _AppShellState extends State<AppShell> {
 
   Future<void> _loadSettings() async {
     final manifest = await _manifestRepository.getAllAsMap();
-    final apiKey = await _aiService.getApiKey();
     final ttsVoiceId = await _ttsService.getVoiceId();
+
+    // Each backend keeps its own key, URL and model so switching between them
+    // in settings never loses a credential.
+    final backendKind = AIBackendKind.fromString(manifest['AIBackend']);
+    final backends = <AIBackendKind, AIBackendSettings>{};
+    for (final kind in AIBackendKind.values) {
+      final key = await _aiService.getApiKey(kind);
+      backends[kind] = AIBackendSettings(
+        apiKey: key ?? '',
+        apiUrl: manifest[kind.urlManifestKey] ?? defaultUrlForBackend(kind),
+        model: manifest[kind.modelManifestKey] ?? defaultModelForBackend(kind),
+      );
+    }
+
     if (mounted) {
       setState(() {
         _markdownEnabled = manifest['Markdown']?.toLowerCase() == 'true';
         _bookName = manifest['Name'] ?? '';
         _author = manifest['Author'] ?? '';
-        _apiKey = apiKey ?? '';
         _contextPrompt = manifest['ContextPrompt'] ?? '';
         _readingFont = ReadingFont.fromString(manifest['ReadingFont']);
         _fontSize = double.tryParse(manifest['FontSize'] ?? '14.0') ?? 14.0;
         _ttsVoiceId = ttsVoiceId;
-        _aiModel = manifest['AIModel'] ?? openAiModel;
+        _backendKind = backendKind;
+        _backendSettings = backends;
+        _sidecarProvider =
+            manifest['AISidecarProvider'] ?? defaultSidecarProvider;
       });
     }
   }
@@ -213,17 +239,22 @@ class _AppShellState extends State<AppShell> {
         name: _bookName,
         author: _author,
         markdown: _markdownEnabled,
-        apiKey: _apiKey,
         contextPrompt: _contextPrompt,
         themeMode: themeProvider.themeMode,
         readingFont: _readingFont,
         fontSize: _fontSize,
         ttsVoiceId: _ttsVoiceId,
-        aiModel: _aiModel,
+        backendKind: _backendKind,
+        backends: _backendSettings,
+        sidecarProvider: _sidecarProvider,
       ),
     );
 
     if (result != null && mounted) {
+      final backendKind = result['backendKind'] as AIBackendKind;
+      final backends =
+          result['backends'] as Map<AIBackendKind, AIBackendSettings>;
+
       await _manifestRepository.setMultiple({
         'Name': result['name'] as String,
         'Author': result['author'] as String,
@@ -231,9 +262,19 @@ class _AppShellState extends State<AppShell> {
         'ContextPrompt': result['contextPrompt'] as String,
         'ReadingFont': (result['readingFont'] as ReadingFont).name,
         'FontSize': (result['fontSize'] as double).toString(),
-        'AIModel': result['aiModel'] as String,
+        'AIBackend': backendKind.name,
+        'AISidecarProvider': result['sidecarProvider'] as String,
+        for (final entry in backends.entries) ...{
+          entry.key.urlManifestKey: entry.value.apiUrl,
+          entry.key.modelManifestKey: entry.value.model,
+        },
       });
-      await _aiService.setApiKey(result['apiKey'] as String);
+
+      for (final entry in backends.entries) {
+        await _aiService.setApiKey(entry.value.apiKey, entry.key);
+      }
+      _aiService.invalidateBackend();
+
       await themeProvider.setThemeMode(result['themeMode'] as ThemeMode);
 
       // Save TTS voice if provided
@@ -455,7 +496,7 @@ class _AppShellState extends State<AppShell> {
                 Consumer<AIUsageProvider>(
                   builder: (context, usageProvider, child) {
                     // Get pricing for current model
-                    final pricing = getModelPricing(_aiModel);
+                    final pricing = getModelPricing(_activeModel);
 
                     // Calculate and format cost
                     final formattedCost = pricing.formatCost(
@@ -479,7 +520,7 @@ class _AppShellState extends State<AppShell> {
                         vertical: AppTheme.spacing8,
                       ),
                       child: Opacity(
-                        opacity: _apiKey.isEmpty ? 0.4 : 1.0,
+                        opacity: !_aiConfigured ? 0.4 : 1.0,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -502,7 +543,7 @@ class _AppShellState extends State<AppShell> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                if (_apiKey.isEmpty) ...[
+                                if (!_aiConfigured) ...[
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.lock_outline,
@@ -548,7 +589,7 @@ class _AppShellState extends State<AppShell> {
                             DSText.bodySmall(
                               formattedCost,
                               style: TextStyle(
-                                color: _apiKey.isEmpty
+                                color: !_aiConfigured
                                     ? Theme.of(context).colorScheme.onSurface
                                           .withValues(alpha: 0.6)
                                     : Theme.of(context).colorScheme.primary,

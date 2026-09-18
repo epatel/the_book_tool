@@ -20,14 +20,14 @@ class _CharactersPageState extends State<CharactersPage> {
 
   Future<void> _showAddCharacterDialog() async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (dialogContext) => AddCharacterDialog(
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 
@@ -41,7 +41,7 @@ class _CharactersPageState extends State<CharactersPage> {
 
   Future<void> _showEditCharacterDialog(Character character) async {
     // Check API key freshly before showing dialog
-    final apiKey = await _aiService.getApiKey();
+    final aiEnabled = await _aiService.isConfigured();
 
     if (!mounted) return;
 
@@ -49,7 +49,7 @@ class _CharactersPageState extends State<CharactersPage> {
       context: context,
       builder: (dialogContext) => EditCharacterDialog(
         character: character,
-        hasApiKey: apiKey != null && apiKey.isNotEmpty,
+        hasApiKey: aiEnabled,
       ),
     );
 

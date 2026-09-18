@@ -265,12 +265,60 @@ trailing: isCurrent
 - Icon size in menu items should be 20 (slightly smaller than default 24)
 
 ### Services
-- **AIService**: OpenAI integration for AI-assisted writing, stores API key in SharedPreferences
+- **AIService**: Backend-agnostic entry point for AI-assisted writing. Builds system messages, logs prompt history, tracks token usage, and delegates the actual call to an `AIBackend`. Keys live in `flutter_secure_storage`, one per backend.
 - **PdfService**: PDF generation and export using the `pdf` package
 - **BookDataService**: Aggregates all book data (chapters, characters, plots, misc notes) for AI context
 - **WindowPreferencesService**: Saves/restores window position and size using `window_manager` and `shared_preferences`
 - **DatabaseService**: Core database operations with graceful schema migrations
 - **DatabaseManager**: Multi-database file management and switching
+
+### AI Backend Architecture
+AI calls go through a pluggable backend interface, so providers can be added
+without touching the pages, dialogs or prompt-history code.
+
+`AIService` → `AIBackend` (in `lib/services/ai_backends/`):
+
+| Backend | `AIBackendKind` | Transport |
+|---|---|---|
+| OpenAI and OpenAI-compatible hosts | `openAiCompatible` | `openai_dart` |
+| Anthropic Messages API | `anthropic` | raw HTTPS via `http` |
+| Local Python sidecar | `sidecar` | HTTP to loopback |
+
+The `AIBackend` contract is `send()` (one `AIBackendRequest` → one
+`AIBackendResult`) plus `check()` (a connectivity probe backing the settings
+dialog's **Test** button, which also discovers the model list).
+
+**Per-backend settings**: each backend owns its own secure-storage key, and its
+own manifest keys for URL and model (`AIBackendKind.secureStorageKey`,
+`.urlManifestKey`, `.modelManifestKey`). Switching backends in settings never
+discards another backend's credentials. Books with no stored `AIBackend` key
+default to `openAiCompatible`, preserving existing behaviour.
+
+**Gating AI features**: use `AIService.isConfigured()`, not "is there an API
+key". The sidecar authenticates itself and needs no key of its own. (The widget
+parameter is still named `hasApiKey` for historical reasons.)
+
+**Cost**: `AIResponse.costUsd` holds a backend-reported cost when there is one;
+otherwise cost is derived from `modelPricing` in `config.dart`. A
+subscription-backed sidecar run legitimately reports `0.0`, which is different
+from reporting nothing.
+
+**Adding a provider**: prefer adding it to the Python sidecar
+(`sidecar/book_tool_sidecar.py` — subclass `Provider`, add it to `PROVIDERS`).
+The app discovers it from `/health` with no Dart changes. Add a new
+`AIBackendKind` only when the provider needs a genuinely different transport.
+
+### Python Sidecar
+An optional local server (`sidecar/`) that fronts the Claude Agent SDK,
+the Anthropic SDK, or anything `litellm` reaches.
+
+The macOS build is sandboxed, so the app **cannot** spawn an interpreter — the
+user runs the sidecar themselves and the app connects over loopback
+(`com.apple.security.network.client`). Do not add process-spawning code for it.
+
+Note the Claude Agent SDK is Python/TypeScript only and is itself a wrapper
+around the `claude` CLI, so that path needs Claude Code installed and logged in.
+See `sidecar/README.md` for the protocol and setup.
 
 ## Key Features
 
